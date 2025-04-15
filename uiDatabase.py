@@ -12,6 +12,14 @@ class DBApp:
         self.label = tk.Label(root, text="Not Connected", font=("Arial", 20), fg="red")
         self.label.pack(pady=10)
 
+        # Database credentials input
+        cred_frame = tk.Frame(root)
+        cred_frame.pack(pady=5)
+
+        tk.Label(cred_frame, text="Password:").grid(row=2, column=0, padx=5, pady=2, sticky="e")
+        self.pass_entry = tk.Entry(cred_frame, width=20, show="*")
+        self.pass_entry.grid(row=2, column=1)
+
         tk.Button(root, text="Open Connection", command=self.open_connection).pack(pady=2)
         tk.Button(root, text="Close Connection", command=self.close_connection).pack(pady=2)
 
@@ -49,7 +57,7 @@ class DBApp:
                 host='localhost',
                 database='healthApp',
                 user='root',
-                password=''  # Replace with your MySQL password
+                password=self.pass_entry.get() # Replace with your MySQL password
             )
             if self.connection.is_connected():
                 self.label.config(text="Connected", fg="green")
