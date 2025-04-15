@@ -181,7 +181,4 @@ class LoginWindow:
             messagebox.showerror("Connection Failed", f"Error: {e}")
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = DBApp(root)
-    root.geometry("700x600")
-    root.mainloop()
+    LoginWindow()
