@@ -4,15 +4,14 @@ import tkinter as tk
 from tkinter import messagebox, scrolledtext
 
 class DBApp:
-    def __init__(self, root):
+    def __init__(self, root, connection):
         self.root = root
         self.root.title("Customer Management")
-        self.connection = None
+        self.connection = connection
 
-        self.label = tk.Label(root, text="Not Connected", font=("Arial", 20), fg="red")
+        self.label = tk.Label(root, text="Connected", font=("Arial", 20), fg="green")
         self.label.pack(pady=10)
 
-        tk.Button(root, text="Open Connection", command=self.open_connection).pack(pady=2)
         tk.Button(root, text="Close Connection", command=self.close_connection).pack(pady=2)
 
         self.entries = {}
@@ -42,19 +41,6 @@ class DBApp:
         self.text_area = scrolledtext.ScrolledText(root, width=70, height=10)
         self.text_area.pack(pady=5)
         self.text_area.config(state='disabled')
-
-    def open_connection(self):
-        try:
-            self.connection = mysql.connector.connect(
-                host='localhost',
-                database='healthApp',
-                user='root',
-                password=''  # Replace with your MySQL password
-            )
-            if self.connection.is_connected():
-                self.label.config(text="Connected", fg="green")
-        except Error as e:
-            messagebox.showerror("Connection Error", f"Error: {e}")
 
     def close_connection(self):
         if self.connection and self.connection.is_connected():
@@ -125,8 +111,34 @@ class DBApp:
             "Payment_Info", "Expenses", "Nutritional_Info"
         ])
 
+class LoginWindow:
+    def __init__(self):
+        self.login_root = tk.Tk()
+        self.login_root.title("MySQL Login")
+        tk.Label(self.login_root, text="Enter MySQL Password:").pack(pady=5)
+        self.password_entry = tk.Entry(self.login_root, show="*")
+        self.password_entry.pack(pady=5)
+        tk.Button(self.login_root, text="Connect", command=self.try_connect).pack(pady=5)
+        self.login_root.geometry("300x150")
+        self.login_root.mainloop()
+
+    def try_connect(self):
+        password = self.password_entry.get()
+        try:
+            connection = mysql.connector.connect(
+                host='localhost',
+                database='healthApp',
+                user='root',
+                password=password
+            )
+            if connection.is_connected():
+                self.login_root.destroy()
+                main_root = tk.Tk()
+                app = DBApp(main_root, connection)
+                main_root.geometry("700x600")
+                main_root.mainloop()
+        except Error as e:
+            messagebox.showerror("Connection Failed", f"Error: {e}")
+
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = DBApp(root)
-    root.geometry("700x600")
-    root.mainloop()
+    LoginWindow()
