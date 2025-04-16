@@ -89,6 +89,22 @@ class DBApp:
 
     def insert_customer(self):
         try:
+            if not all(self.entries[field].get() for field in self.entries):
+                messagebox.showwarning("Input Error", "All fields must be filled out.")
+                return
+
+            try:
+                int(self.entries["Customer_ID"].get())
+            except ValueError:
+                messagebox.showwarning("Input Error", "Customer_ID must be an integer.")
+                return
+
+            try:
+                float(self.entries["Expenses"].get())
+            except ValueError:
+                messagebox.showwarning("Input Error", "Expenses must be a number.")
+                return
+            
             data = self.get_entry_data()
             cursor = self.connection.cursor()
             cursor.execute("""
