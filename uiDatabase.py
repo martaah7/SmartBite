@@ -2,11 +2,33 @@ import mysql.connector
 from mysql.connector import Error
 import tkinter as tk
 from tkinter import messagebox, scrolledtext
+from tkinter import ttk
+
+class ScrollableFrame(ttk.Frame):
+    def __init__(self, container):
+        super().__init__(container)
+        canvas = tk.Canvas(self)
+        scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        self.scrollable_frame = tk.Frame(canvas)
+
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+
+        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
 
 class DBApp:
     def __init__(self, root, connection):
         self.root = root
-        self.root.title("Customer Management")
+        #self.root.title("Customer Management")
         self.connection = connection
 
         self.label = tk.Label(root, text="Connected", font=("Arial", 20), fg="green")
@@ -291,8 +313,13 @@ class LoginWindow:
             if connection.is_connected():
                 self.login_root.destroy()
                 main_root = tk.Tk()
-                app = DBApp(main_root, connection)
+                main_root.title("Customer Management")
                 main_root.geometry("700x600")
+
+                scrollable_area = ScrollableFrame(main_root)
+                scrollable_area.pack(fill="both", expand=True)
+                
+                app = DBApp(scrollable_area.scrollable_frame, connection)
                 main_root.mainloop()
         except Error as e:
             messagebox.showerror("Connection Failed", f"Error: {e}")
