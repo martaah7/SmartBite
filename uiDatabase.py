@@ -291,7 +291,7 @@ class DBAppCustomer:
         tab_control = ttk.Notebook(root)
         tab_control.pack(expand=1, fill="both")
 
-        # --- Tab 1: My Recipes ---
+        # --- Tab 1: My Recipes/Meal Plans ---
         self.my_items_tab = tk.Frame(tab_control)
         tab_control.add(self.my_items_tab, text="My Items")
         self.display_my_items()
@@ -305,16 +305,9 @@ class DBAppCustomer:
         tab_control.add(self.settings_tab, text="Following")
         #self.populate_settings_tab()
 
-        # --- Tab 2: My Grocery List ---
+        # --- Tab 4: My Grocery List ---
         self.grocery_tab = tk.Frame(tab_control)
         tab_control.add(self.grocery_tab, text="My Grocery List")
-        #self.grocery_tab.pack(fill="both", expand=True)
-        #self.populate_grocery_tab()
-
-
-        #            self.grocery_list_frame = tk.Frame(self.root)
-        #    self.grocery_list_frame.pack(fill="both", expand=True)
-
         self.display_grocery_list()
 
     def close_connection(self):
@@ -547,14 +540,14 @@ class DBAppCustomer:
 
                 s = ["Ingredients"] + [row[1] for row in ri_result]
                 
-                w = ExpandableItem(item_frame, row[1], row[3], row[5], row[2], row[4], s)
+                w = ExpandableItem(item_frame, self.connection, row[1], "Recipe", row[3], row[5], row[2], row[4], s)
                 w.grid(row=i+1, column=1, padx=5, pady=5, sticky="w")
 
             for i, row in enumerate(mp_rows):
                 tk.Label(item_frame, text="Meal Plan", font=("Arial", 14)).grid(row=i+1 + len(r_rows), column=0, padx=5, pady=5, sticky="w")
                 #tk.Label(item_frame, text=row[1], font=("Arial", 10)).grid(row=i+1 + len(r_rows), column=1, padx=5, pady=5, sticky="w")
                 
-                w = ExpandableItem(item_frame, row[1], row[4], row[3])
+                w = ExpandableItem(item_frame, self.connection, row[1], "MealPlan", row[4], row[3])
                 w.grid(row=i+1 + len(r_rows), column=1, padx=5, pady=5, sticky="w")
 
         except Error as e:

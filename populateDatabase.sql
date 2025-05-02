@@ -172,7 +172,7 @@ VALUES
   (20, 20);
 
 -- Sample MealPlan Table
-INSERT INTO MealPlan (Meal_Plan_ID, MName, Duration, Expected_Price, RDescription, Nutritional_Info)
+INSERT INTO MealPlan (Meal_Plan_ID, MName, Duration, Expected_Price, MDescription, Nutritional_Info)
 VALUES 
   (1, 'Weekly Plan', 7, 50, 'Balanced meals for a week.', 'High Protein'),
   (2, 'Vegetarian Plan', 5, 40, 'All vegetarian meals.', 'Rich in Fiber'),
