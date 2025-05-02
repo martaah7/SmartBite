@@ -4,26 +4,7 @@ import tkinter as tk
 from tkinter import messagebox, scrolledtext
 from tkinter import ttk
 
-class ScrollableFrame(ttk.Frame):
-    def __init__(self, container):
-        super().__init__(container)
-        canvas = tk.Canvas(self)
-        scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
-        self.scrollable_frame = tk.Frame(canvas)
-
-        self.scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(
-                scrollregion=canvas.bbox("all")
-            )
-        )
-
-        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-
+from customUIElements import ScrollableFrame, ExpandableItem
 
 class DBApp:
     def __init__(self, root, connection):
@@ -290,39 +271,299 @@ class DBApp:
             "Payment_Info", "Expenses", "Nutritional_Info"
         ])
 
-class LoginWindow:
-    def __init__(self):
-        self.login_root = tk.Tk()
-        self.login_root.title("MySQL Login")
-        tk.Label(self.login_root, text="Enter MySQL Password:").pack(pady=5)
-        self.password_entry = tk.Entry(self.login_root, show="*")
-        self.password_entry.pack(pady=5)
-        tk.Button(self.login_root, text="Connect", command=self.try_connect).pack(pady=5)
-        self.login_root.geometry("300x150")
-        self.login_root.mainloop()
+class DBAppCustomer:
+    def __init__(self, root, connection):
+        self.root = root
+        self.connection = connection
+        self.customer_id = 1
 
-    def try_connect(self):
-        password = self.password_entry.get()
+        # Header label with green background
+        header = tk.Label(root, text="SmartBite", bg="green", fg="white", font=("Arial", 24, "bold"))
+        header.pack(fill="x")  # Fill the horizontal space
+
+
+        self.label = tk.Label(root, text="Connected", font=("Arial", 20), fg="green")
+        self.label.pack(pady=10)
+
+        tk.Button(root, text="Close Connection", command=self.close_connection).pack(pady=2)
+
+         # Tabbed interface
+        tab_control = ttk.Notebook(root)
+        tab_control.pack(expand=1, fill="both")
+
+        # --- Tab 1: My Recipes ---
+        self.my_items_tab = tk.Frame(tab_control)
+        tab_control.add(self.my_items_tab, text="My Items")
+        self.display_my_items()
+
+        self.recipes_tab = tk.Frame(tab_control)
+        tab_control.add(self.recipes_tab, text="Saved Items")
+        #self.populate_recipes_tab()
+
+        # --- Tab 3: Friends/Following ---
+        self.settings_tab = tk.Frame(tab_control)
+        tab_control.add(self.settings_tab, text="Following")
+        #self.populate_settings_tab()
+
+        # --- Tab 2: My Grocery List ---
+        self.grocery_tab = tk.Frame(tab_control)
+        tab_control.add(self.grocery_tab, text="My Grocery List")
+        #self.grocery_tab.pack(fill="both", expand=True)
+        #self.populate_grocery_tab()
+
+
+        #            self.grocery_list_frame = tk.Frame(self.root)
+        #    self.grocery_list_frame.pack(fill="both", expand=True)
+
+        self.display_grocery_list()
+
+    def close_connection(self):
+        if self.connection and self.connection.is_connected():
+            self.connection.close()
+            self.label.config(text="Disconnected", fg="red")
+
+    def insert_customer(self):
         try:
-            connection = mysql.connector.connect(
-                host='localhost',
-                database='healthApp',
-                user='root',
-                password=password
-            )
-            if connection.is_connected():
-                self.login_root.destroy()
-                main_root = tk.Tk()
-                main_root.title("Customer Management")
-                main_root.geometry("700x600")
+            if not all(self.entries[field].get() for field in self.entries):
+                messagebox.showwarning("Input Error", "All fields must be filled out.")
+                return
 
-                scrollable_area = ScrollableFrame(main_root)
-                scrollable_area.pack(fill="both", expand=True)
-                
-                app = DBApp(scrollable_area.scrollable_frame, connection)
-                main_root.mainloop()
+            try:
+                int(self.entries["Customer_ID"].get())
+            except ValueError:
+                messagebox.showwarning("Input Error", "Customer_ID must be an integer.")
+                return
+
+            try:
+                float(self.entries["Expenses"].get())
+            except ValueError:
+                messagebox.showwarning("Input Error", "Expenses must be a number.")
+                return
+            
+            data = self.get_entry_data()
+            cursor = self.connection.cursor()
+            cursor.execute("""
+                INSERT INTO Customers (Customer_ID, CName, Dietary_Preference, Contact_Info, Payment_Info, Expenses, Nutritional_Info)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, data)
+            self.connection.commit()
+            messagebox.showinfo("Success", "Customer inserted.")
         except Error as e:
-            messagebox.showerror("Connection Failed", f"Error: {e}")
+            messagebox.showerror("Insert Error", str(e))
 
-if __name__ == "__main__":
-    LoginWindow()
+    def update_customer(self):
+        try:
+            customer_id = self.update_entries["Customer_ID"].get()
+            if not customer_id:
+                messagebox.showwarning("Input Error", "Customer ID is required for update.")
+                return
+                
+            try:
+                if self.update_entries["Expenses"].get():
+                    float(self.update_entries["Expenses"].get())
+            except ValueError:
+                messagebox.showwarning("Input Error", "Expenses must be a number.")
+                return
+            
+            data = (
+                self.update_entries["CName"].get(),
+                self.update_entries["Dietary_Preference"].get(),
+                self.update_entries["Contact_Info"].get(),
+                self.update_entries["Payment_Info"].get(),
+                self.update_entries["Expenses"].get(),
+                self.update_entries["Nutritional_Info"].get(),
+                customer_id 
+            )
+            
+            cursor = self.connection.cursor()
+            cursor.execute("""
+                UPDATE Customers SET 
+                    CName = %s,
+                    Dietary_Preference = %s,
+                    Contact_Info = %s,
+                    Payment_Info = %s,
+                    Expenses = %s,
+                    Nutritional_Info = %s
+                WHERE Customer_ID = %s
+            """, data)
+            
+            self.connection.commit()
+            if cursor.rowcount > 0:
+                messagebox.showinfo("Success", "Customer updated successfully.")
+                for entry in self.update_entries.values():
+                    entry.delete(0, tk.END)
+            else:
+                messagebox.showinfo("No Change", "No customer was updated.")        
+        except Error as e:
+            messagebox.showerror("Update Error", str(e))
+
+    def search_customer(self):
+        try:
+            customer_id = self.search_id_entry.get()
+            if not customer_id:
+                messagebox.showwarning("Input Error", "Please enter a Customer ID to search.")
+                return
+                
+            try:
+                int(customer_id)
+            except ValueError:
+                messagebox.showwarning("Input Error", "Customer ID must be an integer.")
+                return
+                
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT * FROM Customers WHERE Customer_ID = %s", (customer_id,))
+            customer = cursor.fetchone()
+            
+            if customer:
+                fields = ["Customer_ID", "CName", "Dietary_Preference", "Contact_Info",
+                        "Payment_Info", "Expenses", "Nutritional_Info"]
+                
+                for field in fields:
+                    self.update_entries[field].delete(0, tk.END)
+                
+                for i, field in enumerate(fields):
+                    self.update_entries[field].insert(0, str(customer[i]))
+                    
+                self.update_button.config(state=tk.NORMAL)
+                messagebox.showinfo("Customer Found", f"Customer {customer_id} found. You can now update their details.")
+            else:
+                messagebox.showinfo("Not Found", f"No customer found with ID: {customer_id}")
+                for entry in self.update_entries.values():
+                    entry.delete(0, tk.END)
+                self.update_button.config(state=tk.DISABLED)
+                    
+        except Error as e:
+            messagebox.showerror("Search Error", str(e))
+
+    def delete_customer(self):
+        try:
+            customer_id = self.entries["Customer_ID"].get()
+            cursor = self.connection.cursor()
+            cursor.execute("DELETE FROM Customers WHERE Customer_ID = %s", (customer_id,))
+            self.connection.commit()
+            messagebox.showinfo("Success", "Customer deleted.")
+        except Error as e:
+            messagebox.showerror("Delete Error", str(e))
+
+    '''
+    Displays all of the information under the My Grocery List tab
+    '''
+    def display_grocery_list(self):
+        try:
+            #Getting the user's grocery list
+            cursor = self.connection.cursor()
+            query = "SELECT * FROM GroceryList AS G WHERE G.Customer_ID = %s";
+
+            cursor.execute(query, (self.customer_id,))
+            rows = cursor.fetchall()
+            
+            '''
+            Grocery List UI
+            '''
+            # Header
+            tk.Label(self.grocery_tab, text="My Grocery List", font=("Arial", 32, "bold")).grid(row=0, column=0, padx=(0,25), pady=5, sticky="w")
+            tk.Label(self.grocery_tab, text="Expected Price Range: " + rows[0][2], font=("Arial", 16)).grid(row=0, column=1, padx=5, pady=5, sticky="e")
+            tk.Label(self.grocery_tab, text="List Description: " + rows[0][3], font=("Arial", 12)).grid(row=1, column=1, padx=25, pady=5, sticky="e")
+            tk.Label(self.grocery_tab, text="Ingredients", font=("Arial", 26, "bold")).grid(row=2, column=0, padx=5, pady=5, sticky="w")
+
+            #list of ingredients
+            ingredient_frame = tk.Frame(self.grocery_tab)
+            ingredient_frame.grid(row=3, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
+
+            # Make the grocery_tab columns expand
+            self.grocery_tab.grid_columnconfigure(0, weight=1)
+            self.grocery_tab.grid_columnconfigure(1, weight=1)
+
+            # Make ingredient_frame columns expand
+            ingredient_frame.grid_columnconfigure(0, weight=1)
+            ingredient_frame.grid_columnconfigure(1, weight=1)
+            ingredient_frame.grid_columnconfigure(2, weight=1)
+            ingredient_frame.grid_columnconfigure(3, weight=1)
+
+            # Headers for ingredients
+            tk.Label(ingredient_frame, text="ID", font=("Arial", 12, "bold")).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+            tk.Label(ingredient_frame, text="Name", font=("Arial", 12, "bold")).grid(row=0, column=1, padx=5, pady=5, sticky="w")
+            tk.Label(ingredient_frame, text="Price", font=("Arial", 12, "bold")).grid(row=0, column=2, padx=5, pady=5, sticky="w")
+
+            #checkbox    
+            var = tk.BooleanVar()
+            checkbox = tk.Checkbutton(ingredient_frame, variable=var)
+            checkbox.grid(row=1, column=3)
+
+        except Error as e:
+            messagebox.showerror("Display Error", str(e))
+
+    '''
+    Displays all of the information under the My Items tab
+    '''
+    def display_my_items(self):
+        try:
+            #Getting the user's items list
+            cursor = self.connection.cursor()
+            r_query = "SELECT * FROM Recipe AS R WHERE R.Recipe_ID <= 10"
+            mp_query = "SELECT * FROM MealPlan AS MP WHERE MP.Meal_Plan_ID <= 10"
+            cursor.execute(r_query)
+            r_rows = cursor.fetchall()
+            
+            cursor.execute(mp_query)
+            mp_rows = cursor.fetchall()
+            
+            '''
+            My Items UI
+            '''
+            # Header
+            tk.Label(self.my_items_tab, text="My Created Items", font=("Arial", 32, "bold")).grid(row=0, column=0, padx=(0,25), pady=5, sticky="w")
+            
+            #list of items
+            item_frame = tk.Frame(self.my_items_tab)
+            item_frame.grid(row=3, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
+
+            # Make the tab columns expand
+            self.my_items_tab.grid_columnconfigure(0, weight=1)
+            self.my_items_tab.grid_columnconfigure(1, weight=1)
+
+            # Make frame columns expand
+            item_frame.grid_columnconfigure(0, weight=1)
+            item_frame.grid_columnconfigure(1, weight=1)
+            item_frame.grid_columnconfigure(2, weight=1)
+            item_frame.grid_columnconfigure(3, weight=1)
+
+            # Headers for ingredients
+            tk.Label(item_frame, text="Type", font=("Arial", 12, "bold")).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+            tk.Label(item_frame, text="Name", font=("Arial", 12, "bold")).grid(row=0, column=1, padx=5, pady=5, sticky="w")
+            
+            for i, row in enumerate(r_rows):
+                tk.Label(item_frame, text="Recipe", font=("Arial", 14)).grid(row=i+1, column=0, padx=5, pady=5, sticky="w")
+                #tk.Label(item_frame, text=row[1], font=("Arial", 10)).grid(row=i+1, column=1, padx=5, pady=5, sticky="w")
+                
+                ri_query = """
+                    SELECT I.* 
+                    FROM RecipeIngredient AS RI 
+                    JOIN Ingredient AS I ON RI.Ingredient_ID = I.Ingredient_ID
+                    WHERE RI.Recipe_ID = %s"""
+                cursor.execute(ri_query, (row[0],))
+                ri_result = cursor.fetchall()
+                #print("searchring for id:", row[0], "ri result:", ri_result)
+
+                s = ["Ingredients"] + [row[1] for row in ri_result]
+                
+                w = ExpandableItem(item_frame, row[1], row[3], row[5], row[2], row[4], s)
+                w.grid(row=i+1, column=1, padx=5, pady=5, sticky="w")
+
+            for i, row in enumerate(mp_rows):
+                tk.Label(item_frame, text="Meal Plan", font=("Arial", 14)).grid(row=i+1 + len(r_rows), column=0, padx=5, pady=5, sticky="w")
+                #tk.Label(item_frame, text=row[1], font=("Arial", 10)).grid(row=i+1 + len(r_rows), column=1, padx=5, pady=5, sticky="w")
+                
+                w = ExpandableItem(item_frame, row[1], row[4], row[3])
+                w.grid(row=i+1 + len(r_rows), column=1, padx=5, pady=5, sticky="w")
+
+        except Error as e:
+            messagebox.showerror("Display Error", str(e))
+
+
+    def get_entry_data(self):
+        return tuple(self.entries[field].get() for field in [
+            "Customer_ID", "CName", "Dietary_Preference", "Contact_Info",
+            "Payment_Info", "Expenses", "Nutritional_Info"
+        ])
+
