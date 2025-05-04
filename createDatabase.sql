@@ -113,11 +113,28 @@ CREATE TABLE Restocks (
 );
 
 -- NEED TO POPULATE TO MAKE SAVED TAB ON UI
-CREATE TABLE SavedBy(
+CREATE TABLE RSavedBy(
     Customer_ID INT NOT NULL,
     ID INT NOT NULL,
     -- MEDIA_TYPE ENUM('Recipe', 'Meal Plan') NOT NULL,
     PRIMARY KEY (Customer_ID, ID),
     FOREIGN KEY (Customer_ID) REFERENCES Customers(Customer_ID),
     FOREIGN KEY (ID) REFERENCES Recipe(Recipe_ID)
+);
+
+CREATE TABLE MSavedBy(
+    Customer_ID INT NOT NULL,
+    ID INT NOT NULL,
+    -- MEDIA_TYPE ENUM('Recipe', 'Meal Plan') NOT NULL,
+    PRIMARY KEY (Customer_ID, ID),
+    FOREIGN KEY (Customer_ID) REFERENCES Customers(Customer_ID),
+    FOREIGN KEY (ID) REFERENCES MealPlan(Meal_Plan_ID)
+);
+
+CREATE TABLE GroceryListItems(
+    List_ID INT NOT NULL,
+    Ingredient_ID INT NOT NULL,
+    PRIMARY KEY (List_ID, Ingredient_ID),
+    FOREIGN KEY (List_ID) REFERENCES GroceryList(List_ID),
+    FOREIGN KEY (Ingredient_ID) REFERENCES Ingredient(Ingredient_ID)
 );

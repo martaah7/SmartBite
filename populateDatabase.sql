@@ -267,3 +267,5 @@ VALUES
   (19, 19),
   (20, 20);
 
+INSERT INTO GroceryListItems(List_ID, Ingredient_ID)
+VALUES (1, 1), (1, 2), (1, 3), (1, 4);

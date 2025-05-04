@@ -445,43 +445,109 @@ class DBAppCustomer:
         try:
             #Getting the user's grocery list
             cursor = self.connection.cursor()
-            query = "SELECT * FROM GroceryList AS G WHERE G.Customer_ID = %s";
+            query = """
+                SELECT * 
+                FROM GroceryList 
+                WHERE Customer_ID = %s"""
 
             cursor.execute(query, (self.customer_id,))
             rows = cursor.fetchall()
+
+            cursor = self.connection.cursor()
+            query = """
+                SELECT G.Nutritional_Info, I.* 
+                FROM GroceryListItems AS GI
+                JOIN GroceryList AS G ON G.List_ID = GI.List_ID
+                JOIN Ingredient AS I ON GI.Ingredient_ID = I.Ingredient_ID 
+                WHERE G.Customer_ID = %s"""
+
+            cursor.execute(query, (self.customer_id,))
+            list_items = cursor.fetchall()
+            #print(rows)
             
             '''
             Grocery List UI
             '''
-            # Header
-            tk.Label(self.grocery_tab, text="My Grocery List", font=("Arial", 32, "bold")).grid(row=0, column=0, padx=(0,25), pady=5, sticky="w")
-            tk.Label(self.grocery_tab, text="Expected Price Range: " + rows[0][2], font=("Arial", 16)).grid(row=0, column=1, padx=5, pady=5, sticky="e")
-            tk.Label(self.grocery_tab, text="List Description: " + rows[0][3], font=("Arial", 12)).grid(row=1, column=1, padx=25, pady=5, sticky="e")
-            tk.Label(self.grocery_tab, text="Ingredients", font=("Arial", 26, "bold")).grid(row=2, column=0, padx=5, pady=5, sticky="w")
-
             #list of ingredients
             ingredient_frame = tk.Frame(self.grocery_tab)
             ingredient_frame.grid(row=3, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
 
-            # Make the grocery_tab columns expand
-            self.grocery_tab.grid_columnconfigure(0, weight=1)
-            self.grocery_tab.grid_columnconfigure(1, weight=1)
+            def write_header():
+                # Header
+                tk.Label(self.grocery_tab, text="My Grocery List", font=("Arial", 32, "bold")).grid(row=0, column=0, padx=(0,25), pady=5, sticky="w")
+                tk.Label(self.grocery_tab, text="Expected Price Range: " + rows[0][2], font=("Arial", 16)).grid(row=0, column=1, padx=5, pady=5, sticky="e")
+                tk.Label(self.grocery_tab, text="List Description: " + rows[0][3], font=("Arial", 12)).grid(row=1, column=1, padx=25, pady=5, sticky="e")
+                tk.Label(self.grocery_tab, text="Ingredients", font=("Arial", 26, "bold")).grid(row=2, column=0, padx=5, pady=5, sticky="w")
 
-            # Make ingredient_frame columns expand
-            ingredient_frame.grid_columnconfigure(0, weight=1)
-            ingredient_frame.grid_columnconfigure(1, weight=1)
-            ingredient_frame.grid_columnconfigure(2, weight=1)
-            ingredient_frame.grid_columnconfigure(3, weight=1)
 
-            # Headers for ingredients
-            tk.Label(ingredient_frame, text="ID", font=("Arial", 12, "bold")).grid(row=0, column=0, padx=5, pady=5, sticky="w")
-            tk.Label(ingredient_frame, text="Name", font=("Arial", 12, "bold")).grid(row=0, column=1, padx=5, pady=5, sticky="w")
-            tk.Label(ingredient_frame, text="Price", font=("Arial", 12, "bold")).grid(row=0, column=2, padx=5, pady=5, sticky="w")
+                # Make the grocery_tab columns expand
+                self.grocery_tab.grid_columnconfigure(0, weight=1)
+                self.grocery_tab.grid_columnconfigure(1, weight=1)
 
-            #checkbox    
-            var = tk.BooleanVar()
-            checkbox = tk.Checkbutton(ingredient_frame, variable=var)
-            checkbox.grid(row=1, column=3)
+                # Make ingredient_frame columns expand
+                ingredient_frame.grid_columnconfigure(0, weight=1)
+                ingredient_frame.grid_columnconfigure(1, weight=1)
+                ingredient_frame.grid_columnconfigure(2, weight=1)
+                ingredient_frame.grid_columnconfigure(3, weight=1)
+
+                # Headers for ingredients
+                tk.Label(ingredient_frame, text="ID", font=("Arial", 12, "bold")).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+                tk.Label(ingredient_frame, text="Name", font=("Arial", 12, "bold")).grid(row=0, column=1, padx=5, pady=5, sticky="w")
+                tk.Label(ingredient_frame, text="Price", font=("Arial", 12, "bold")).grid(row=0, column=2, padx=5, pady=5, sticky="w")
+
+            write_header()
+
+
+            self.checkbox_vars = []
+            for i, item in enumerate(list_items):
+                tk.Label(ingredient_frame, text=item[1], font=("Arial", 12, "bold")).grid(row=i + 1, column=0, padx=5, pady=5, sticky="w")
+                tk.Label(ingredient_frame, text=item[2], font=("Arial", 12)).grid(row=i + 1, column=1, padx=5, pady=5, sticky="w")
+                tk.Label(ingredient_frame, text=item[5], font=("Arial", 12)).grid(row=i + 1, column=2, padx=5, pady=5, sticky="w")
+
+                #checkbox    
+                var = tk.BooleanVar()
+                checkbox = tk.Checkbutton(ingredient_frame, variable=var)
+                checkbox.grid(row=i + 1, column=3)
+                self.checkbox_vars.append(var)
+
+            def remove_list_item():
+                #entries = [child for child in ingredient_frame.winfo_children() if isinstance(child, tk.Checkbutton)]
+                results = [var.get() for var in self.checkbox_vars]
+                #print(results)
+
+                for i, result in enumerate(results):
+                    if result:
+                        ingredient_id = -1
+                        for widget in ingredient_frame.grid_slaves(row=i+1):
+                            if isinstance(widget, tk.Label):
+                                if widget.grid_info()["column"] == 0:
+                                    ingredient_id = widget.cget('text')
+                            widget.destroy()
+                        
+                        #write query to actually remove it from list
+                        cursor = self.connection.cursor()
+                        query = """
+                            SELECT G.List_ID
+                            FROM GroceryList AS G 
+                            WHERE G.Customer_ID = %s"""
+                        cursor.execute(query, (self.customer_id,))
+                        list_id = cursor.fetchall()[0][0]
+                        
+                        query = """
+                            DELETE FROM GroceryListItems AS GI
+                            WHERE GI.List_ID = %s AND GI.Ingredient_ID = %s"""
+
+                        #print(list_id, ingredient_id)
+                        if list_id > 0 and ingredient_id > 0:
+                            cursor.execute(query, (list_id,ingredient_id,))
+                            self.connection.commit()
+                            
+
+
+
+            tk.Button(self.grocery_tab, text="Remove Items", width=20, command=remove_list_item).grid(row=4, column=0, columnspan=2, padx=(0,25), pady=5, sticky="ew")
+
+            
 
         except Error as e:
             messagebox.showerror("Display Error", str(e))
@@ -507,6 +573,9 @@ class DBAppCustomer:
             # Header
             tk.Label(self.my_items_tab, text="My Created Items", font=("Arial", 32, "bold")).grid(row=0, column=0, padx=(0,25), pady=5, sticky="w")
             
+            tk.Button(self.my_items_tab, text="Add Item  +", width=20, command=self.add_item).grid(row=0, column=1, padx=(0,25), pady=5, sticky="e")
+
+
             #list of items
             item_frame = tk.Frame(self.my_items_tab)
             item_frame.grid(row=3, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
@@ -571,4 +640,12 @@ class DBAppCustomer:
             "Customer_ID", "CName", "Dietary_Preference", "Contact_Info",
             "Payment_Info", "Expenses", "Nutritional_Info"
         ])
+    
+
+    '''
+    Function to add an item to list, TODO NEED TO IMPLEMENT
+    '''
+    def add_item(self):
+        #TODO: implement
+        print("need to implement")
 
