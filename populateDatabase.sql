@@ -124,28 +124,28 @@ VALUES
   (20, 'Strawberry', 'Vitamin C, Fiber', 'Blackberries', '$10-$15');
 
 -- Sample Recipe Table
-INSERT INTO Recipe (Recipe_ID, RName, Cooking_Instructions, RDescription, Nutritional_Info, Expected_Price, Is_Private_Visibility)
+INSERT INTO Recipe (Recipe_ID, RName, Cooking_Instructions, RDescription, Nutritional_Info, Expected_Price, Created_By, Is_Private_Visibility)
 VALUES 
-  (1, 'Tomato Soup', 'Boil tomatoes and blend.', 'A comforting soup.', 'Low Calorie', 10, FALSE),
-  (2, 'Spinach Salad', 'Mix spinach with dressing.', 'A fresh salad.', 'High Iron', 8, FALSE),
-  (3, 'Carrot Cake', 'Bake grated carrots with spices.', 'A sweet dessert.', 'Rich in Fiber', 12, FALSE),
-  (4, 'Broccoli Stir Fry', 'Stir fry broccoli with garlic.', 'A healthy stir fry.', 'Low Calorie', 9, FALSE),
-  (5, 'Grilled Chicken', 'Grill chicken breast until cooked.', 'A protein-packed meal.', 'High Protein', 15, FALSE),
-  (6, 'Quinoa Bowl', 'Mix quinoa with veggies.', 'A hearty bowl.', 'Gluten-Free', 11, FALSE),
-  (7, 'Baked Salmon', 'Bake salmon with herbs.', 'A delicious seafood dish.', 'Omega-3 Rich', 18, FALSE),
-  (8, 'Avocado Toast', 'Toast bread and top with avocado.', 'A simple snack.', 'Healthy Fats', 7, FALSE),
-  (9, 'Pepper Stir Fry', 'Stir fry bell peppers with soy sauce.', 'A vibrant dish.', 'Antioxidants', 10, FALSE),
-  (10, 'Cucumber Salad', 'Mix sliced cucumbers with vinegar.', 'A refreshing salad.', 'Hydrating', 6, FALSE),
-  (11, 'Egg Omelette', 'Whisk eggs and cook with fillings.', 'A classic breakfast.', 'Protein Rich', 5, FALSE),
-  (12, 'Garden Lettuce Wraps', 'Wrap lettuce around fillings.', 'A light meal.', 'Low Calorie', 8, FALSE),
-  (13, 'Beef Stew', 'Slow cook beef with vegetables.', 'A hearty stew.', 'High Protein', 16, FALSE),
-  (14, 'Mushroom Risotto', 'Cook rice with mushrooms and broth.', 'A creamy dish.', 'Rich in Vitamin D', 14, FALSE),
-  (15, 'Yogurt Parfait', 'Layer yogurt with fruit and granola.', 'A healthy dessert.', 'Calcium Rich', 7, FALSE),
-  (16, 'Blueberry Muffins', 'Bake muffins with fresh blueberries.', 'A tasty treat.', 'Antioxidants', 9, FALSE),
-  (17, 'Oats Porridge', 'Cook oats with milk and honey.', 'A warm breakfast.', 'Heart Healthy', 6, FALSE),
-  (18, 'Almond Smoothie', 'Blend almonds with banana and milk.', 'A creamy smoothie.', 'Protein Rich', 8, TRUE),
-  (19, 'Banana Bread', 'Bake bread with mashed bananas.', 'A classic treat.', 'Potassium Rich', 10, FALSE),
-  (20, 'Strawberry Shortcake', 'Layer cake with strawberries and cream.', 'A delightful dessert.', 'Vitamin C Rich', 12, TRUE);
+  (1, 'Tomato Soup', 'Boil tomatoes and blend.', 'A comforting soup.', 'Low Calorie', 10, 1, FALSE),
+  (2, 'Spinach Salad', 'Mix spinach with dressing.', 'A fresh salad.', 'High Iron', 8, 1, FALSE),
+  (3, 'Carrot Cake', 'Bake grated carrots with spices.', 'A sweet dessert.', 'Rich in Fiber', 12, 3, FALSE),
+  (4, 'Broccoli Stir Fry', 'Stir fry broccoli with garlic.', 'A healthy stir fry.', 'Low Calorie', 9, 4, FALSE),
+  (5, 'Grilled Chicken', 'Grill chicken breast until cooked.', 'A protein-packed meal.', 'High Protein', 15, 2, FALSE),
+  (6, 'Quinoa Bowl', 'Mix quinoa with veggies.', 'A hearty bowl.', 'Gluten-Free', 11, 7, FALSE),
+  (7, 'Baked Salmon', 'Bake salmon with herbs.', 'A delicious seafood dish.', 'Omega-3 Rich', 18, 1, FALSE),
+  (8, 'Avocado Toast', 'Toast bread and top with avocado.', 'A simple snack.', 'Healthy Fats', 7, 3, FALSE),
+  (9, 'Pepper Stir Fry', 'Stir fry bell peppers with soy sauce.', 'A vibrant dish.', 'Antioxidants', 10, 4, FALSE),
+  (10, 'Cucumber Salad', 'Mix sliced cucumbers with vinegar.', 'A refreshing salad.', 'Hydrating', 6, 8, FALSE),
+  (11, 'Egg Omelette', 'Whisk eggs and cook with fillings.', 'A classic breakfast.', 'Protein Rich', 5, 10, FALSE),
+  (12, 'Garden Lettuce Wraps', 'Wrap lettuce around fillings.', 'A light meal.', 'Low Calorie', 8, 12, FALSE),
+  (13, 'Beef Stew', 'Slow cook beef with vegetables.', 'A hearty stew.', 'High Protein', 16, 17, FALSE),
+  (14, 'Mushroom Risotto', 'Cook rice with mushrooms and broth.', 'A creamy dish.', 'Rich in Vitamin D', 14, 7, FALSE),
+  (15, 'Yogurt Parfait', 'Layer yogurt with fruit and granola.', 'A healthy dessert.', 'Calcium Rich', 7, 6, FALSE),
+  (16, 'Blueberry Muffins', 'Bake muffins with fresh blueberries.', 'A tasty treat.', 'Antioxidants', 9, 12, FALSE),
+  (17, 'Oats Porridge', 'Cook oats with milk and honey.', 'A warm breakfast.', 'Heart Healthy', 6, 16, FALSE),
+  (18, 'Almond Smoothie', 'Blend almonds with banana and milk.', 'A creamy smoothie.', 'Protein Rich', 8, 18, TRUE),
+  (19, 'Banana Bread', 'Bake bread with mashed bananas.', 'A classic treat.', 'Potassium Rich', 10, 13, FALSE),
+  (20, 'Strawberry Shortcake', 'Layer cake with strawberries and cream.', 'A delightful dessert.', 'Vitamin C Rich', 12, 9, TRUE);
 
 -- Sample RecipeIngredient Table
 INSERT INTO RecipeIngredient (Recipe_ID, Ingredient_ID)
@@ -172,28 +172,28 @@ VALUES
   (20, 20);
 
 -- Sample MealPlan Table
-INSERT INTO MealPlan (Meal_Plan_ID, MName, Duration, Expected_Price, MDescription, Nutritional_Info)
+INSERT INTO MealPlan (Meal_Plan_ID, MName, Duration, Expected_Price, MDescription, Nutritional_Info, Created_By, Is_Private_Visibility)
 VALUES 
-  (1, 'Weekly Plan', 7, 50, 'Balanced meals for a week.', 'High Protein'),
-  (2, 'Vegetarian Plan', 5, 40, 'All vegetarian meals.', 'Rich in Fiber'),
-  (3, 'Budget Plan', 7, 30, 'Cost-effective meals.', 'Low Calorie'),
-  (4, 'Fitness Plan', 7, 60, 'High protein for workouts.', 'High Protein'),
-  (5, 'Detox Plan', 3, 25, 'Cleanse and detox.', 'Low Sugar'),
-  (6, 'Keto Plan', 7, 55, 'Low carb meals.', 'Low Carb'),
-  (7, 'Vegan Plan', 5, 45, 'All vegan options.', 'Vegan'),
-  (8, 'Gluten-Free Plan', 7, 50, 'No gluten meals.', 'Gluten-Free'),
-  (9, 'Mediterranean Plan', 7, 65, 'Balanced Mediterranean diet.', 'Healthy Fats'),
-  (10, 'Quick Meals Plan', 3, 20, 'Meals in under 30 mins.', 'Low Calorie'),
-  (11, 'Family Plan', 7, 70, 'Meals for the whole family.', 'Balanced'),
-  (12, 'Luxury Plan', 7, 100, 'Gourmet meals.', 'Rich in Nutrients'),
-  (13, 'High Energy Plan', 7, 80, 'Energy boosting meals.', 'High Protein'),
-  (14, 'Weight Loss Plan', 7, 45, 'Low calorie meals.', 'Low Fat'),
-  (15, 'Muscle Gain Plan', 7, 65, 'Protein rich meals.', 'High Protein'),
-  (16, 'Organic Plan', 7, 60, 'Organic ingredients.', 'Organic'),
-  (17, 'Seasonal Plan', 7, 50, 'Seasonal recipes.', 'Varied Nutrients'),
-  (18, 'Comfort Food Plan', 7, 55, 'Comforting meals.', 'High Carb'),
-  (19, 'Balanced Diet Plan', 7, 60, 'Well balanced meals.', 'Balanced'),
-  (20, 'Holiday Plan', 7, 75, 'Festive recipes.', 'Rich in Flavors');
+  (1, 'Weekly Plan', 7, 50, 'Balanced meals for a week.', 'High Protein', 1, FALSE),
+  (2, 'Vegetarian Plan', 5, 40, 'All vegetarian meals.', 'Rich in Fiber', 1, FALSE),
+  (3, 'Budget Plan', 7, 30, 'Cost-effective meals.', 'Low Calorie', 1, FALSE),
+  (4, 'Fitness Plan', 7, 60, 'High protein for workouts.', 'High Protein', 1, FALSE),
+  (5, 'Detox Plan', 3, 25, 'Cleanse and detox.', 'Low Sugar', 5, FALSE),
+  (6, 'Keto Plan', 7, 55, 'Low carb meals.', 'Low Carb', 5, FALSE),
+  (7, 'Vegan Plan', 5, 45, 'All vegan options.', 'Vegan', 5, FALSE),
+  (8, 'Gluten-Free Plan', 7, 50, 'No gluten meals.', 'Gluten-Free', 8, FALSE),
+  (9, 'Mediterranean Plan', 7, 65, 'Balanced Mediterranean diet.', 'Healthy Fats', 9, FALSE),
+  (10, 'Quick Meals Plan', 3, 20, 'Meals in under 30 mins.', 'Low Calorie', 10, FALSE),
+  (11, 'Family Plan', 7, 70, 'Meals for the whole family.', 'Balanced', 10, FALSE),
+  (12, 'Luxury Plan', 7, 100, 'Gourmet meals.', 'Rich in Nutrients', 10, FALSE),
+  (13, 'High Energy Plan', 7, 80, 'Energy boosting meals.', 'High Protein', 10, FALSE),
+  (14, 'Weight Loss Plan', 7, 45, 'Low calorie meals.', 'Low Fat', 14, FALSE),
+  (15, 'Muscle Gain Plan', 7, 65, 'Protein rich meals.', 'High Protein', 14, FALSE),
+  (16, 'Organic Plan', 7, 60, 'Organic ingredients.', 'Organic', 16, FALSE),
+  (17, 'Seasonal Plan', 7, 50, 'Seasonal recipes.', 'Varied Nutrients', 17, FALSE),
+  (18, 'Comfort Food Plan', 7, 55, 'Comforting meals.', 'High Carb', 17, FALSE),
+  (19, 'Balanced Diet Plan', 7, 60, 'Well balanced meals.', 'Balanced', 17, FALSE),
+  (20, 'Holiday Plan', 7, 75, 'Festive recipes.', 'Rich in Flavors', 20, FALSE);
 
 -- Sample MealPlanRecipe Table
 INSERT INTO MealPlanRecipe (Recipe_ID, Meal_Plan_ID)

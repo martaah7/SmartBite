@@ -3,6 +3,7 @@ from mysql.connector import Error
 import tkinter as tk
 from tkinter import messagebox, scrolledtext
 from tkinter import ttk
+from enum import Enum
 
 class ScrollableFrame(ttk.Frame):
     def __init__(self, container):
@@ -25,23 +26,27 @@ class ScrollableFrame(ttk.Frame):
         scrollbar.pack(side="right", fill="y")
 
 class ExpandableItem(tk.Frame):
-    def __init__(self, master, connection, item_name, item_type, *args, font_size = 14, can_edit = True, args_order = ["Description", "Expected Price", "Cooking Instructions", "Nutritional Info"], use_args_order = True, **kwargs):
+    def __init__(self, master, connection, item_name, item_type, *args, font_size = 14, can_edit = True, use_args_order = True, is_sub_item = False, **kwargs):
         super().__init__(master, **kwargs)
         self.expanded = False
         self.detail_frame = None
         self.attributes = args
         self.can_edit = can_edit
-        self.args_order = args_order
         self.use_args_order = use_args_order
+        self.is_sub_item = is_sub_item
         self.item_type = item_type
         self.item_name = item_name
         self.connection = connection
+        self.args_order = ["Description", "Expected Price", "Cooking Instructions", "Nutritional Info"] if self.item_type == ItemType.RECIPE else ["Description", "Expected Price", "Duration", "Nutritional Info"]
 
         #print(self.attributes)
+        font_style = ("Arial", font_size)
+        if self.is_sub_item:
+            font_style = ("Arial", font_size, "bold")
 
         self.button = tk.Button(self, 
             text=item_name, 
-            font=("Arial", font_size), 
+            font=font_style, 
             width=30,
             relief="flat",       
             borderwidth=0,anchor="w", 
@@ -62,14 +67,44 @@ class ExpandableItem(tk.Frame):
                     if self.use_args_order:
                        s += self.args_order[i] + ":"
 
-                    tk.Label(self.detail_frame, text=f"{s} {arg}", anchor="w").pack(fill="x")
+                    if not self.is_sub_item:
+                        tk.Label(self.detail_frame, text=f"{s} {arg}", anchor="w").pack(fill="x")
+                    else:
+                        cursor = self.connection.cursor()
+            
+                        if self.item_type == ItemType.RECIPE:
+                            r_query = "SELECT * FROM Recipe AS R WHERE R.RName = %s"
+                            cursor.execute(r_query, (arg,))
+                            r_result = cursor.fetchall()[0]
+
+                            ri_query = """
+                                SELECT I.* 
+                                FROM RecipeIngredient AS RI 
+                                JOIN Ingredient AS I ON RI.Ingredient_ID = I.Ingredient_ID
+                                JOIN RECIPE AS R ON RI.Recipe_ID = R.Recipe_ID
+                                WHERE R.RName = %s"""
+                            cursor.execute(ri_query, (arg,))
+                            ri_result = cursor.fetchall()
+                            #print("searchring for id:", row[0], "ri result:", ri_result)
+
+                            s = ["Ingredients"] + [row[1] for row in ri_result]
+                            #print(r_result)
+                            #print(s)
+                            
+                            w = ExpandableItem(self.detail_frame, self.connection, arg, self.item_type, r_result[3], r_result[5], r_result[2], r_result[4], s, font_size=10, can_edit=False).pack(fill="x")
+                            
+                        else:
+                            ExpandableItem(self.detail_frame, self.connection, arg, self.item_type, "add details here", font_size=10, can_edit=False).pack(fill="x")
                 else:
-                    w = ExpandableItem(self.detail_frame, self.connection, arg[0], self.item_type, *(arg[1:]), font_size=10, use_args_order=False)
+                    w = ExpandableItem(self.detail_frame, self.connection, arg[0], self.item_type - 1, *(arg[1:]), font_size=10, use_args_order=False, is_sub_item=True, can_edit=self.can_edit)
                     w.pack(fill="x")
             #tk.Label(self.detail_frame, text=f"Price: ${self.price}", anchor="w").pack(fill="x")
 
             if self.can_edit:
-                tk.Button(self.detail_frame, text="Edit", command=self.edit_item).pack(anchor="e", pady=5)
+                if not self.is_sub_item:
+                    tk.Button(self.detail_frame, text="Edit", command=self.edit_item).pack(anchor="e", pady=5)
+                else:
+                    tk.Button(self.detail_frame, text=f"Add/Remove {self.item_type}", command=self.remove_item).pack(anchor="e", pady=5)
             self.detail_frame.pack(fill="x")
             self.expanded = True
 
@@ -94,8 +129,7 @@ class ExpandableItem(tk.Frame):
             entries = [child for child in new_window.winfo_children() if isinstance(child, tk.Entry)]
             results = [entry.get() for entry in entries]
 
-            #TODO: send querry to alter/edit entry in database
-            edit_query = "UPDATE " + self.item_type + " AS " + self.item_type[0] + " SET "
+            edit_query = f"UPDATE {self.item_type} AS {self.item_type[0]} SET "
             for i,result in enumerate(results):
                 r = result
                 if isinstance(result, str):
@@ -118,7 +152,7 @@ class ExpandableItem(tk.Frame):
 
             self.connection.commit()
             if cursor.rowcount > 0:
-                messagebox.showinfo("Success", "Customer updated successfully.")
+                messagebox.showinfo("Success", (self.item_type + " updated successfully."))
                 #for entry in self.update_entries.values():
                 #    entry.delete(0, tk.END)
 
@@ -127,8 +161,14 @@ class ExpandableItem(tk.Frame):
                 cursor.execute(refreshed_query, (self.item_name,))
                 row = cursor.fetchone()
                 if row:
-                    if self.item_type == "Recipe":
+                    if self.item_type == ItemType.RECIPE:
                         self.attributes = (row[3], row[5], row[2], row[4], self.attributes[4])  
+                    elif self.item_type == ItemType.MEALPLAN:
+                        #print(row)
+                        #print(self.attributes)
+                        self.attributes = (row[4], row[3], row[2], row[5])
+                        #print(self.attributes)
+                        
                     
                     # Re-render detail_frame if expanded
                     if self.expanded:
@@ -139,7 +179,63 @@ class ExpandableItem(tk.Frame):
                 new_window.destroy()
             else:
                 messagebox.showinfo("No Change", "No customer was updated.") 
-            
-
+          
         submit_edit_button = tk.Button(new_window, text="Save Edits", command=submit_edit)
         submit_edit_button.grid(row=len(self.args_order) + 1, column=1, padx=10, pady=5)
+
+    def remove_item(self):
+        new_window = tk.Toplevel(self.master)
+        new_window.title("Add/Remove item")
+        l = tk.Label(new_window, text="Need to implement the ability to add/remove items", anchor="w").grid(row=0, column=0, padx=10, pady=5)
+
+        #TODO: implement
+        print("still need to implement")
+
+
+class ItemType(Enum):
+    MEALPLAN = 2
+    RECIPE = 1
+    INGREDIENT = 0
+
+    #allows for addition with item_type
+    #returns self + value, ex ingredient + 1 = recipe
+    def __add__(self, value):
+        if isinstance(value, int):
+            sum = self.value + value
+
+            for possible_type in ItemType:
+                if possible_type.value == sum:
+                    return possible_type
+                
+            raise ValueError("No possible enum value for {sum}")
+        
+        if isinstance(value, str):
+            new_str = self.name + value
+
+            return new_str
+        raise TypeError("Cannot add {value.__class__} with ItemType. Must be int or string.")
+
+    #allows for subtraction with item_type
+    #returns self - value, ex meal_plan - 1 = recipe
+    def __sub__(self, value):
+        if isinstance(value, int):
+            diff = self.value - value
+
+            for possible_type in ItemType:
+                if possible_type.value == diff:
+                    return possible_type
+                
+            raise ValueError("No possible enum value for {diff}")
+        raise TypeError("Can only subtract an integer from ItemType")
+    
+    def __str__(self):
+        return {
+            ItemType.RECIPE: "Recipe",
+            ItemType.MEALPLAN: "MealPlan",
+            ItemType.INGREDIENT: "Ingredient"
+        }[self]
+    
+    def __getitem__(self, index):
+        return self.name[index]
+    
+    

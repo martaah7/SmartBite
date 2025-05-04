@@ -9,7 +9,7 @@ CREATE TABLE Employee (
     EName VARCHAR(255)
 );
 
--- Customers Tableingredient
+-- Customers Table
 CREATE TABLE Customers (
     Customer_ID INT PRIMARY KEY,
     CName VARCHAR(255) NOT NULL, 
@@ -39,7 +39,7 @@ CREATE TABLE GroceryList (
 CREATE TABLE Ingredient (
     Ingredient_ID INT PRIMARY KEY,
     IName VARCHAR(255) NOT NULL,
-    Nutritional_Info VARCHAR(255),
+    Nutritional_Info VARCHAR(255), 
     Substitutes VARCHAR(255),
     Price_Range VARCHAR(255) NOT NULL
 );
@@ -52,7 +52,9 @@ CREATE TABLE Recipe (
     RDescription VARCHAR(511),
     Nutritional_Info VARCHAR(255),
     Expected_Price INT CHECK (Expected_Price > 0), 
-    Is_Private_Visibility BOOLEAN
+    Created_By INT NOT NULL,
+    Is_Private_Visibility BOOLEAN,
+    FOREIGN KEY (Created_By) REFERENCES Customers(Customer_ID)
     -- ingredients being handled by the recipe ingredient table
 );
 
@@ -73,8 +75,11 @@ CREATE TABLE MealPlan (
     MName VARCHAR(255) NOT NULL,
     Duration INT, -- number of days the meal plan should cover
     Expected_Price INT CHECK (Expected_Price > 0), -- estimate value of the expected price
-    RDescription VARCHAR(511),
-    Nutritional_Info VARCHAR(255)
+    MDescription VARCHAR(511),
+    Nutritional_Info VARCHAR(255),
+    Created_By INT NOT NULL,
+    Is_Private_Visibility BOOLEAN,
+    FOREIGN KEY (Created_By) REFERENCES Customers(Customer_ID)
 );
 
 -- This table handles effectively storing the recipes needed for each meal plan
@@ -105,4 +110,14 @@ CREATE TABLE Restocks (
     PRIMARY KEY (Store_ID, Ingredient_ID),
     FOREIGN KEY (Store_ID) REFERENCES GroceryStore(Retailer_ID),
     FOREIGN KEY (Ingredient_ID) REFERENCES Ingredient(Ingredient_ID)
+);
+
+-- NEED TO POPULATE TO MAKE SAVED TAB ON UI
+CREATE TABLE SavedBy(
+    Customer_ID INT NOT NULL,
+    ID INT NOT NULL,
+    -- MEDIA_TYPE ENUM('Recipe', 'Meal Plan') NOT NULL,
+    PRIMARY KEY (Customer_ID, ID),
+    FOREIGN KEY (Customer_ID) REFERENCES Customers(Customer_ID),
+    FOREIGN KEY (ID) REFERENCES Recipe(Recipe_ID)
 );

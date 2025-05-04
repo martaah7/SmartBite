@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import messagebox, scrolledtext
 from tkinter import ttk
 
-from customUIElements import ScrollableFrame, ExpandableItem
+from customUIElements import ScrollableFrame, ExpandableItem, ItemType
 
 class DBApp:
     def __init__(self, root, connection):
@@ -493,8 +493,8 @@ class DBAppCustomer:
         try:
             #Getting the user's items list
             cursor = self.connection.cursor()
-            r_query = "SELECT * FROM Recipe AS R WHERE R.Recipe_ID <= 10"
-            mp_query = "SELECT * FROM MealPlan AS MP WHERE MP.Meal_Plan_ID <= 10"
+            r_query = "SELECT * FROM Recipe AS R WHERE R.Created_By = " + str(self.customer_id) #WHERE R.Recipe_ID <= 10"
+            mp_query = "SELECT * FROM MealPlan AS MP WHERE MP.Created_By = " + str(self.customer_id) #WHERE MP.Meal_Plan_ID <= 10"
             cursor.execute(r_query)
             r_rows = cursor.fetchall()
             
@@ -539,15 +539,27 @@ class DBAppCustomer:
                 #print("searchring for id:", row[0], "ri result:", ri_result)
 
                 s = ["Ingredients"] + [row[1] for row in ri_result]
+                #print(s)
                 
-                w = ExpandableItem(item_frame, self.connection, row[1], "Recipe", row[3], row[5], row[2], row[4], s)
+                w = ExpandableItem(item_frame, self.connection, row[1], ItemType.RECIPE, row[3], row[5], row[2], row[4], s)
                 w.grid(row=i+1, column=1, padx=5, pady=5, sticky="w")
 
             for i, row in enumerate(mp_rows):
                 tk.Label(item_frame, text="Meal Plan", font=("Arial", 14)).grid(row=i+1 + len(r_rows), column=0, padx=5, pady=5, sticky="w")
                 #tk.Label(item_frame, text=row[1], font=("Arial", 10)).grid(row=i+1 + len(r_rows), column=1, padx=5, pady=5, sticky="w")
                 
-                w = ExpandableItem(item_frame, self.connection, row[1], "MealPlan", row[4], row[3])
+                mr_query = """
+                    SELECT R.* 
+                    FROM MealPlanRecipe AS MR 
+                    JOIN Recipe AS R ON MR.Recipe_ID = R.Recipe_ID
+                    WHERE MR.Meal_Plan_ID = %s"""
+                cursor.execute(mr_query, (row[0],))
+                mr_result = cursor.fetchall()
+                
+                s = ["Recipes"] + [row[1] for row in mr_result]
+                #print(s)
+
+                w = ExpandableItem(item_frame, self.connection, row[1], ItemType.MEALPLAN, row[4], row[3], row[2], row[5], s)
                 w.grid(row=i+1 + len(r_rows), column=1, padx=5, pady=5, sticky="w")
 
         except Error as e:
