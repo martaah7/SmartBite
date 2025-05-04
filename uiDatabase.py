@@ -453,16 +453,21 @@ class DBAppCustomer:
             cursor.execute(query, (self.customer_id,))
             rows = cursor.fetchall()
 
-            cursor = self.connection.cursor()
             query = """
                 SELECT G.Nutritional_Info, I.* 
                 FROM GroceryListItems AS GI
                 JOIN GroceryList AS G ON G.List_ID = GI.List_ID
                 JOIN Ingredient AS I ON GI.Ingredient_ID = I.Ingredient_ID 
                 WHERE G.Customer_ID = %s"""
-
             cursor.execute(query, (self.customer_id,))
             list_items = cursor.fetchall()
+
+            query = """
+                SELECT G.List_ID
+                FROM GroceryList AS G 
+                WHERE G.Customer_ID = %s"""
+            cursor.execute(query, (self.customer_id,))
+            list_id = cursor.fetchall()[0][0]
             #print(rows)
             
             '''
@@ -472,12 +477,72 @@ class DBAppCustomer:
             ingredient_frame = tk.Frame(self.grocery_tab)
             ingredient_frame.grid(row=3, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
 
+            self.checkbox_vars = []
+            
+            
+            def add_item_to_list():
+                new_window = tk.Toplevel(self.root)
+                new_window.title("Add item")
+
+                l = tk.Label(new_window, text="Ingredient ID: ", anchor="w").grid(row=0, column=0, padx=10, pady=5)
+                e = tk.Entry(new_window)
+                e.grid(row=0, column=1, padx=10, pady=5)
+
+                def submit_add():
+                    entries = [child for child in new_window.winfo_children() if isinstance(child, tk.Entry)]
+                    results = [entry.get() for entry in entries]
+                    ingredient_id = results[0]
+                    #print(results)
+
+                    cursor = self.connection.cursor()
+                    query = """
+                        INSERT IGNORE INTO GroceryListItems (List_ID, Ingredient_ID)
+                        VALUES (%s, %s)
+                        """
+                    cursor.execute(query, (list_id,ingredient_id,))
+                    self.connection.commit()
+
+                    if cursor.rowcount > 0:
+                        messagebox.showinfo("Success", "Grocery List updated successfully.")
+                        #TODO: add new item to gui  
+
+                        query = """
+                            SELECT * 
+                            FROM Ingredient
+                            WHERE Ingredient_ID = %s;
+                            """
+                        cursor.execute(query, (ingredient_id,))
+                        added_info = cursor.fetchall()[0]
+                        #print(added_info)
+
+                        i = len(list_items)
+                        tk.Label(ingredient_frame, text=added_info[0], font=("Arial", 12, "bold")).grid(row=i + 1, column=0, padx=5, pady=5, sticky="w")
+                        tk.Label(ingredient_frame, text=added_info[1], font=("Arial", 12)).grid(row=i + 1, column=1, padx=5, pady=5, sticky="w")
+                        tk.Label(ingredient_frame, text=added_info[4], font=("Arial", 12)).grid(row=i + 1, column=2, padx=5, pady=5, sticky="w")
+
+                        #checkbox    
+                        var = tk.BooleanVar()
+                        checkbox = tk.Checkbutton(ingredient_frame, variable=var)
+                        checkbox.grid(row=i + 1, column=3)
+                        self.checkbox_vars.append(var)                     
+
+                        new_window.destroy()
+                    else:
+                        messagebox.showinfo("No Change", "No customer was updated.") 
+                    
+
+                submit_add_button = tk.Button(new_window, text="Save Edits", command=submit_add)
+                submit_add_button.grid(row=1, column=1, padx=10, pady=5)
+             
             def write_header():
                 # Header
                 tk.Label(self.grocery_tab, text="My Grocery List", font=("Arial", 32, "bold")).grid(row=0, column=0, padx=(0,25), pady=5, sticky="w")
                 tk.Label(self.grocery_tab, text="Expected Price Range: " + rows[0][2], font=("Arial", 16)).grid(row=0, column=1, padx=5, pady=5, sticky="e")
                 tk.Label(self.grocery_tab, text="List Description: " + rows[0][3], font=("Arial", 12)).grid(row=1, column=1, padx=25, pady=5, sticky="e")
+                
                 tk.Label(self.grocery_tab, text="Ingredients", font=("Arial", 26, "bold")).grid(row=2, column=0, padx=5, pady=5, sticky="w")
+                tk.Button(self.grocery_tab, text="Add Item  +", width=20, command=add_item_to_list).grid(row=2, column=1, padx=(0,25), pady=5, sticky="e")
+
 
 
                 # Make the grocery_tab columns expand
@@ -497,8 +562,6 @@ class DBAppCustomer:
 
             write_header()
 
-
-            self.checkbox_vars = []
             for i, item in enumerate(list_items):
                 tk.Label(ingredient_frame, text=item[1], font=("Arial", 12, "bold")).grid(row=i + 1, column=0, padx=5, pady=5, sticky="w")
                 tk.Label(ingredient_frame, text=item[2], font=("Arial", 12)).grid(row=i + 1, column=1, padx=5, pady=5, sticky="w")
@@ -525,14 +588,6 @@ class DBAppCustomer:
                             widget.destroy()
                         
                         #write query to actually remove it from list
-                        cursor = self.connection.cursor()
-                        query = """
-                            SELECT G.List_ID
-                            FROM GroceryList AS G 
-                            WHERE G.Customer_ID = %s"""
-                        cursor.execute(query, (self.customer_id,))
-                        list_id = cursor.fetchall()[0][0]
-                        
                         query = """
                             DELETE FROM GroceryListItems AS GI
                             WHERE GI.List_ID = %s AND GI.Ingredient_ID = %s"""
@@ -541,9 +596,6 @@ class DBAppCustomer:
                         if list_id > 0 and ingredient_id > 0:
                             cursor.execute(query, (list_id,ingredient_id,))
                             self.connection.commit()
-                            
-
-
 
             tk.Button(self.grocery_tab, text="Remove Items", width=20, command=remove_list_item).grid(row=4, column=0, columnspan=2, padx=(0,25), pady=5, sticky="ew")
 
