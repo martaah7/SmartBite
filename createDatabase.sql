@@ -138,3 +138,11 @@ CREATE TABLE GroceryListItems(
     FOREIGN KEY (List_ID) REFERENCES GroceryList(List_ID),
     FOREIGN KEY (Ingredient_ID) REFERENCES Ingredient(Ingredient_ID)
 );
+
+CREATE TABLE CustomerFollows(
+    Follower_ID INT NOT NULL,
+    Followed_ID INT NOT NULL,
+    PRIMARY KEY (Follower_ID, Followed_ID),
+    FOREIGN KEY (Follower_ID) REFERENCES Customers(Customer_ID),
+    FOREIGN KEY (Followed_ID) REFERENCES Customers(Customer_ID)
+);

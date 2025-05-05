@@ -269,3 +269,7 @@ VALUES
 
 INSERT INTO GroceryListItems(List_ID, Ingredient_ID)
 VALUES (1, 1), (1, 2), (1, 3), (1, 4);
+
+
+INSERT INTO CustomerFollows(Follower_ID, Followed_ID)
+VALUES (1, 2), (2, 1), (1, 10), (1, 5), (5, 1);

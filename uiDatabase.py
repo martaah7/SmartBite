@@ -301,9 +301,9 @@ class DBAppCustomer:
         #self.populate_recipes_tab()
 
         # --- Tab 3: Friends/Following ---
-        self.settings_tab = tk.Frame(tab_control)
-        tab_control.add(self.settings_tab, text="Following")
-        #self.populate_settings_tab()
+        self.friends_tab = tk.Frame(tab_control)
+        tab_control.add(self.friends_tab, text="Following")
+        self.display_friends()
 
         # --- Tab 4: My Grocery List ---
         self.grocery_tab = tk.Frame(tab_control)
@@ -314,129 +314,6 @@ class DBAppCustomer:
         if self.connection and self.connection.is_connected():
             self.connection.close()
             self.label.config(text="Disconnected", fg="red")
-
-    def insert_customer(self):
-        try:
-            if not all(self.entries[field].get() for field in self.entries):
-                messagebox.showwarning("Input Error", "All fields must be filled out.")
-                return
-
-            try:
-                int(self.entries["Customer_ID"].get())
-            except ValueError:
-                messagebox.showwarning("Input Error", "Customer_ID must be an integer.")
-                return
-
-            try:
-                float(self.entries["Expenses"].get())
-            except ValueError:
-                messagebox.showwarning("Input Error", "Expenses must be a number.")
-                return
-            
-            data = self.get_entry_data()
-            cursor = self.connection.cursor()
-            cursor.execute("""
-                INSERT INTO Customers (Customer_ID, CName, Dietary_Preference, Contact_Info, Payment_Info, Expenses, Nutritional_Info)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, data)
-            self.connection.commit()
-            messagebox.showinfo("Success", "Customer inserted.")
-        except Error as e:
-            messagebox.showerror("Insert Error", str(e))
-
-    def update_customer(self):
-        try:
-            customer_id = self.update_entries["Customer_ID"].get()
-            if not customer_id:
-                messagebox.showwarning("Input Error", "Customer ID is required for update.")
-                return
-                
-            try:
-                if self.update_entries["Expenses"].get():
-                    float(self.update_entries["Expenses"].get())
-            except ValueError:
-                messagebox.showwarning("Input Error", "Expenses must be a number.")
-                return
-            
-            data = (
-                self.update_entries["CName"].get(),
-                self.update_entries["Dietary_Preference"].get(),
-                self.update_entries["Contact_Info"].get(),
-                self.update_entries["Payment_Info"].get(),
-                self.update_entries["Expenses"].get(),
-                self.update_entries["Nutritional_Info"].get(),
-                customer_id 
-            )
-            
-            cursor = self.connection.cursor()
-            cursor.execute("""
-                UPDATE Customers SET 
-                    CName = %s,
-                    Dietary_Preference = %s,
-                    Contact_Info = %s,
-                    Payment_Info = %s,
-                    Expenses = %s,
-                    Nutritional_Info = %s
-                WHERE Customer_ID = %s
-            """, data)
-            
-            self.connection.commit()
-            if cursor.rowcount > 0:
-                messagebox.showinfo("Success", "Customer updated successfully.")
-                for entry in self.update_entries.values():
-                    entry.delete(0, tk.END)
-            else:
-                messagebox.showinfo("No Change", "No customer was updated.")        
-        except Error as e:
-            messagebox.showerror("Update Error", str(e))
-
-    def search_customer(self):
-        try:
-            customer_id = self.search_id_entry.get()
-            if not customer_id:
-                messagebox.showwarning("Input Error", "Please enter a Customer ID to search.")
-                return
-                
-            try:
-                int(customer_id)
-            except ValueError:
-                messagebox.showwarning("Input Error", "Customer ID must be an integer.")
-                return
-                
-            cursor = self.connection.cursor()
-            cursor.execute("SELECT * FROM Customers WHERE Customer_ID = %s", (customer_id,))
-            customer = cursor.fetchone()
-            
-            if customer:
-                fields = ["Customer_ID", "CName", "Dietary_Preference", "Contact_Info",
-                        "Payment_Info", "Expenses", "Nutritional_Info"]
-                
-                for field in fields:
-                    self.update_entries[field].delete(0, tk.END)
-                
-                for i, field in enumerate(fields):
-                    self.update_entries[field].insert(0, str(customer[i]))
-                    
-                self.update_button.config(state=tk.NORMAL)
-                messagebox.showinfo("Customer Found", f"Customer {customer_id} found. You can now update their details.")
-            else:
-                messagebox.showinfo("Not Found", f"No customer found with ID: {customer_id}")
-                for entry in self.update_entries.values():
-                    entry.delete(0, tk.END)
-                self.update_button.config(state=tk.DISABLED)
-                    
-        except Error as e:
-            messagebox.showerror("Search Error", str(e))
-
-    def delete_customer(self):
-        try:
-            customer_id = self.entries["Customer_ID"].get()
-            cursor = self.connection.cursor()
-            cursor.execute("DELETE FROM Customers WHERE Customer_ID = %s", (customer_id,))
-            self.connection.commit()
-            messagebox.showinfo("Success", "Customer deleted.")
-        except Error as e:
-            messagebox.showerror("Delete Error", str(e))
 
     '''
     Displays all of the information under the My Grocery List tab
@@ -504,7 +381,6 @@ class DBAppCustomer:
 
                     if cursor.rowcount > 0:
                         messagebox.showinfo("Success", "Grocery List updated successfully.")
-                        #TODO: add new item to gui  
 
                         query = """
                             SELECT * 
@@ -514,6 +390,15 @@ class DBAppCustomer:
                         cursor.execute(query, (ingredient_id,))
                         added_info = cursor.fetchall()[0]
                         #print(added_info)
+
+                        query = """
+                            SELECT G.Nutritional_Info, I.* 
+                            FROM GroceryListItems AS GI
+                            JOIN GroceryList AS G ON G.List_ID = GI.List_ID
+                            JOIN Ingredient AS I ON GI.Ingredient_ID = I.Ingredient_ID 
+                            WHERE G.Customer_ID = %s"""
+                        cursor.execute(query, (self.customer_id,))
+                        list_items = cursor.fetchall()
 
                         i = len(list_items)
                         tk.Label(ingredient_frame, text=added_info[0], font=("Arial", 12, "bold")).grid(row=i + 1, column=0, padx=5, pady=5, sticky="w")
@@ -686,14 +571,86 @@ class DBAppCustomer:
         except Error as e:
             messagebox.showerror("Display Error", str(e))
 
+    '''
+    Displys all the friends information under the friends tab
+    '''
+    def display_friends(self):
+        try:
+            #Getting the user's friends
+            cursor = self.connection.cursor()
+            following_query = "SELECT * FROM CustomerFollows WHERE Follower_ID = " + str(self.customer_id) #WHERE R.Recipe_ID <= 10"
+            cursor.execute(following_query)
+            follower_rows = cursor.fetchall()
+            following_ids = [f[1] for f in follower_rows]
+            print(following_ids)
+            
+            '''
+            My Friends UI
+            '''
+            # Header
+            tk.Label(self.friends_tab, text="My Friends", font=("Arial", 32, "bold")).grid(row=0, column=0, padx=(0,25), pady=5, sticky="w")
+            
+            #tk.Button(self.my_items_tab, text="Add Item  +", width=20, command=self.add_item).grid(row=0, column=1, padx=(0,25), pady=5, sticky="e")
 
-    def get_entry_data(self):
-        return tuple(self.entries[field].get() for field in [
-            "Customer_ID", "CName", "Dietary_Preference", "Contact_Info",
-            "Payment_Info", "Expenses", "Nutritional_Info"
-        ])
-    
+            #list of following
+            following_frame = tk.Frame(self.friends_tab)
+            following_frame.grid(row=3, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
 
+            # Make the tab columns expand
+            self.friends_tab.grid_columnconfigure(0, weight=1)
+            self.friends_tab.grid_columnconfigure(1, weight=1)
+
+            # Make frame columns expand
+            following_frame.grid_columnconfigure(0, weight=1)
+            following_frame.grid_columnconfigure(1, weight=1)
+            following_frame.grid_columnconfigure(2, weight=1)
+            following_frame.grid_columnconfigure(3, weight=1)
+
+            # Headers for ingredients
+            #tk.Label(following_frame, text="Type", font=("Arial", 12, "bold")).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+            tk.Label(following_frame, text="Name", font=("Arial", 12, "bold")).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+            
+            for i, following_id in enumerate(following_ids):
+                #tk.Label(following_frame, text="Recipe", font=("Arial", 14)).grid(row=i+1, column=0, padx=5, pady=5, sticky="w")
+                #tk.Label(item_frame, text=row[1], font=("Arial", 10)).grid(row=i+1, column=1, padx=5, pady=5, sticky="w")
+                
+                cname_query = """
+                    SELECT C.CName 
+                    FROM Customers AS C 
+                    WHERE C.Customer_ID = %s""" 
+                cursor.execute(cname_query, (following_id,))
+                cname_result = cursor.fetchall()
+                #print("searchring for id:", row[0], "ri result:", ri_result)
+
+                s = cname_result[0][0]
+                print(s)
+            
+                #TODO: make customer item type
+                w = ExpandableItem(following_frame, self.connection, s, ItemType.CUSTOMER, following_id, can_edit=False, is_sub_item=True)
+                w.grid(row=i+1, column=0, padx=5, pady=5, sticky="w")
+            '''
+            for i, row in enumerate(mp_rows):
+                tk.Label(item_frame, text="Meal Plan", font=("Arial", 14)).grid(row=i+1 + len(r_rows), column=0, padx=5, pady=5, sticky="w")
+                #tk.Label(item_frame, text=row[1], font=("Arial", 10)).grid(row=i+1 + len(r_rows), column=1, padx=5, pady=5, sticky="w")
+                
+                mr_query = """
+                    SELECT R.* 
+                    FROM MealPlanRecipe AS MR 
+                    JOIN Recipe AS R ON MR.Recipe_ID = R.Recipe_ID
+                    WHERE MR.Meal_Plan_ID = %s"""
+                cursor.execute(mr_query, (row[0],))
+                mr_result = cursor.fetchall()
+                
+                s = ["Recipes"] + [row[1] for row in mr_result]
+                #print(s)
+
+                w = ExpandableItem(item_frame, self.connection, row[1], ItemType.MEALPLAN, row[4], row[3], row[2], row[5], s)
+                w.grid(row=i+1 + len(r_rows), column=1, padx=5, pady=5, sticky="w")
+            '''
+        except Error as e:
+            messagebox.showerror("Display Error", str(e))
+        
+        
     '''
     Function to add an item to list, TODO NEED TO IMPLEMENT
     '''

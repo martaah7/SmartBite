@@ -92,7 +92,65 @@ class ExpandableItem(tk.Frame):
                             #print(s)
                             
                             w = ExpandableItem(self.detail_frame, self.connection, arg, self.item_type, r_result[3], r_result[5], r_result[2], r_result[4], s, font_size=10, can_edit=False).pack(fill="x")
+                        elif self.item_type == ItemType.CUSTOMER:
+                            r_query = "SELECT * FROM Recipe AS R WHERE R.Created_By = %s"
+                            cursor.execute(r_query, (arg,))
+                            r_results = cursor.fetchall()
+
+                            m_query = "SELECT * FROM MealPlan AS M WHERE M.Created_By = %s"
+                            cursor.execute(m_query, (arg,))
+                            m_results = cursor.fetchall()
+
+                            print("recipes:", r_results)
+                            print("meal pleans:", m_results)
+
+                            for r_result in r_results:
+                                ri_query = """
+                                    SELECT I.* 
+                                    FROM RecipeIngredient AS RI 
+                                    JOIN Ingredient AS I ON RI.Ingredient_ID = I.Ingredient_ID
+                                    JOIN RECIPE AS R ON RI.Recipe_ID = R.Recipe_ID
+                                    WHERE R.RName = %s"""
+                                cursor.execute(ri_query, (r_result[1],))
+                                ri_result = cursor.fetchall()
+                                #print("searchring for id:", row[0], "ri result:", ri_result)
+
+                                s = ["Ingredients"] + [row[1] for row in ri_result]
+                                w = ExpandableItem(self.detail_frame, self.connection, r_result[1], ItemType.RECIPE, r_result[3], r_result[5], r_result[2], r_result[4], s, font_size=10, can_edit=False).pack(fill="x")
+
+                            for row in m_results:
+                                mr_query = """
+                                    SELECT R.* 
+                                    FROM MealPlanRecipe AS MR 
+                                    JOIN Recipe AS R ON MR.Recipe_ID = R.Recipe_ID
+                                    WHERE MR.Meal_Plan_ID = %s"""
+                                cursor.execute(mr_query, (row[0],))
+                                mr_result = cursor.fetchall()
+                                
+                                s = ["Recipes"] + [row[1] for row in mr_result]
+                                print(s)
+
+                                w = ExpandableItem(self.detail_frame, self.connection, row[1], ItemType.MEALPLAN, row[4], row[3], row[2], row[5], s).pack(fill="x")
+                                #w.grid(row=i+1 + len(r_results), column=0, padx=5, pady=5, sticky="w")
+
+
+                            '''
+                                m_query = """
+                                SELECT I.* 
+                                FROM RecipeIngredient AS RI 
+                                JOIN Ingredient AS I ON RI.Ingredient_ID = I.Ingredient_ID
+                                JOIN RECIPE AS R ON RI.Recipe_ID = R.Recipe_ID
+                                WHERE R.RName = %s"""
+                            cursor.execute(ri_query, (arg,))
+                            ri_result = cursor.fetchall()
+                            #print("searchring for id:", row[0], "ri result:", ri_result)
+
+                            s = ["Ingredients"] + [row[1] for row in ri_result]
+                            #print(r_result)
+                            #print(s)
                             
+                            w = ExpandableItem(self.detail_frame, self.connection, arg, self.item_type, r_result[3], r_result[5], r_result[2], r_result[4], s, font_size=10, can_edit=False).pack(fill="x")
+                            '''
                         else:
                             ExpandableItem(self.detail_frame, self.connection, arg, self.item_type, "add details here", font_size=10, can_edit=False).pack(fill="x")
                 else:
@@ -193,6 +251,7 @@ class ExpandableItem(tk.Frame):
 
 
 class ItemType(Enum):
+    CUSTOMER = 3
     MEALPLAN = 2
     RECIPE = 1
     INGREDIENT = 0
@@ -232,6 +291,7 @@ class ItemType(Enum):
         return {
             ItemType.RECIPE: "Recipe",
             ItemType.MEALPLAN: "MealPlan",
+            ItemType.CUSTOMER: "Customers",
             ItemType.INGREDIENT: "Ingredient"
         }[self]
     
