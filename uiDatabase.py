@@ -296,9 +296,9 @@ class DBAppCustomer:
         tab_control.add(self.my_items_tab, text="My Items")
         self.display_my_items()
 
-        self.recipes_tab = tk.Frame(tab_control)
-        tab_control.add(self.recipes_tab, text="Saved Items")
-        #self.populate_recipes_tab()
+        self.saved_items_tab = tk.Frame(tab_control)
+        tab_control.add(self.saved_items_tab, text="Saved Items")
+        self.display_my_saved_items()
 
         # --- Tab 3: Friends/Following ---
         self.friends_tab = tk.Frame(tab_control)
@@ -315,6 +315,11 @@ class DBAppCustomer:
             self.connection.close()
             self.label.config(text="Disconnected", fg="red")
 
+    '''--------------------------------------------------
+    
+        FUNCTIONS THAT POPULATE MAJOR TAB PAGES
+
+    --------------------------------------------------'''
     '''
     Displays all of the information under the My Grocery List tab
     '''
@@ -571,6 +576,101 @@ class DBAppCustomer:
         except Error as e:
             messagebox.showerror("Display Error", str(e))
 
+        '''
+    Displays all of the information under the My Items tab
+    '''
+    
+    '''
+    Displays all the information under the saved items tab
+    '''
+    def display_my_saved_items(self):
+        try:
+            #Getting the user's items list
+            cursor = self.connection.cursor()
+            sr_query = """
+                SELECT R.* 
+                FROM RSavedBy AS RS
+                JOIN Recipe AS R ON RS.ID = R.Recipe_ID
+                WHERE RS.Customer_ID = %s"""
+            cursor.execute(sr_query, (self.customer_id,))
+            r_rows = cursor.fetchall()
+            
+            sm_query = """
+                SELECT M.* 
+                FROM MSavedBy AS MS
+                JOIN MealPlan AS M ON MS.ID = M.Meal_Plan_ID
+                WHERE MS.Customer_ID = %s"""
+            cursor.execute(sm_query, (self.customer_id,))
+            mp_rows = cursor.fetchall()
+            
+            '''
+            My Items UI
+            '''
+            # Header
+            tk.Label(self.saved_items_tab, text="My Created Items", font=("Arial", 32, "bold")).grid(row=0, column=0, padx=(0,25), pady=5, sticky="w")
+            
+            tk.Button(self.saved_items_tab, text="Add Item  +", width=20, command=self.add_item).grid(row=0, column=1, padx=(0,25), pady=5, sticky="e")
+
+
+            #list of items
+            item_frame = tk.Frame(self.saved_items_tab)
+            item_frame.grid(row=3, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
+
+            # Make the tab columns expand
+            self.saved_items_tab.grid_columnconfigure(0, weight=1)
+            self.saved_items_tab.grid_columnconfigure(1, weight=1)
+
+            # Make frame columns expand
+            item_frame.grid_columnconfigure(0, weight=1)
+            item_frame.grid_columnconfigure(1, weight=1)
+            item_frame.grid_columnconfigure(2, weight=1)
+            item_frame.grid_columnconfigure(3, weight=1)
+
+            # Headers for ingredients
+            tk.Label(item_frame, text="Type", font=("Arial", 12, "bold")).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+            tk.Label(item_frame, text="Name", font=("Arial", 12, "bold")).grid(row=0, column=1, padx=5, pady=5, sticky="w")
+            
+            for i, row in enumerate(r_rows):
+                tk.Label(item_frame, text="Recipe", font=("Arial", 14)).grid(row=i+1, column=0, padx=5, pady=5, sticky="w")
+                #tk.Label(item_frame, text=row[1], font=("Arial", 10)).grid(row=i+1, column=1, padx=5, pady=5, sticky="w")
+                
+                ri_query = """
+                    SELECT I.* 
+                    FROM RecipeIngredient AS RI 
+                    JOIN Ingredient AS I ON RI.Ingredient_ID = I.Ingredient_ID
+                    WHERE RI.Recipe_ID = %s"""
+                cursor.execute(ri_query, (row[0],))
+                ri_result = cursor.fetchall()
+                #print("searchring for id:", row[0], "ri result:", ri_result)
+
+                s = ["Ingredients"] + [row[1] for row in ri_result]
+                #print(s)
+                
+                w = ExpandableItem(item_frame, self.connection, row[1], ItemType.RECIPE, row[3], row[5], row[2], row[4], s)
+                w.grid(row=i+1, column=1, padx=5, pady=5, sticky="w")
+
+            for i, row in enumerate(mp_rows):
+                tk.Label(item_frame, text="Meal Plan", font=("Arial", 14)).grid(row=i+1 + len(r_rows), column=0, padx=5, pady=5, sticky="w")
+                #tk.Label(item_frame, text=row[1], font=("Arial", 10)).grid(row=i+1 + len(r_rows), column=1, padx=5, pady=5, sticky="w")
+                
+                mr_query = """
+                    SELECT R.* 
+                    FROM MealPlanRecipe AS MR 
+                    JOIN Recipe AS R ON MR.Recipe_ID = R.Recipe_ID
+                    WHERE MR.Meal_Plan_ID = %s"""
+                cursor.execute(mr_query, (row[0],))
+                mr_result = cursor.fetchall()
+                
+                s = ["Recipes"] + [row[1] for row in mr_result]
+                #print(s)
+
+                w = ExpandableItem(item_frame, self.connection, row[1], ItemType.MEALPLAN, row[4], row[3], row[2], row[5], s)
+                w.grid(row=i+1 + len(r_rows), column=1, padx=5, pady=5, sticky="w")
+
+        except Error as e:
+            messagebox.showerror("Display Error", str(e))
+
+
     '''
     Displys all the friends information under the friends tab
     '''
@@ -625,34 +725,16 @@ class DBAppCustomer:
                 s = cname_result[0][0]
                 print(s)
             
-                #TODO: make customer item type
-                w = ExpandableItem(following_frame, self.connection, s, ItemType.CUSTOMER, following_id, can_edit=False, is_sub_item=True)
+                w = ExpandableItem(following_frame, self.connection, s, ItemType.CUSTOMER, following_id, can_edit=False, is_sub_item=True, customer_id=self.customer_id)
                 w.grid(row=i+1, column=0, padx=5, pady=5, sticky="w")
-            '''
-            for i, row in enumerate(mp_rows):
-                tk.Label(item_frame, text="Meal Plan", font=("Arial", 14)).grid(row=i+1 + len(r_rows), column=0, padx=5, pady=5, sticky="w")
-                #tk.Label(item_frame, text=row[1], font=("Arial", 10)).grid(row=i+1 + len(r_rows), column=1, padx=5, pady=5, sticky="w")
-                
-                mr_query = """
-                    SELECT R.* 
-                    FROM MealPlanRecipe AS MR 
-                    JOIN Recipe AS R ON MR.Recipe_ID = R.Recipe_ID
-                    WHERE MR.Meal_Plan_ID = %s"""
-                cursor.execute(mr_query, (row[0],))
-                mr_result = cursor.fetchall()
-                
-                s = ["Recipes"] + [row[1] for row in mr_result]
-                #print(s)
-
-                w = ExpandableItem(item_frame, self.connection, row[1], ItemType.MEALPLAN, row[4], row[3], row[2], row[5], s)
-                w.grid(row=i+1 + len(r_rows), column=1, padx=5, pady=5, sticky="w")
-            '''
+      
         except Error as e:
             messagebox.showerror("Display Error", str(e))
         
         
     '''
-    Function to add an item to list, TODO NEED TO IMPLEMENT
+    Function to add an item to list
+    TODO NEED TO IMPLEMENT, should probably make this sub function like grocery list's add
     '''
     def add_item(self):
         #TODO: implement

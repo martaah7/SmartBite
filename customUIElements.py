@@ -26,7 +26,7 @@ class ScrollableFrame(ttk.Frame):
         scrollbar.pack(side="right", fill="y")
 
 class ExpandableItem(tk.Frame):
-    def __init__(self, master, connection, item_name, item_type, *args, font_size = 14, can_edit = True, use_args_order = True, is_sub_item = False, **kwargs):
+    def __init__(self, master, connection, item_name, item_type, *args, font_size = 14, can_edit = True, use_args_order = True, is_sub_item = False, customer_id = 1, **kwargs):
         super().__init__(master, **kwargs)
         self.expanded = False
         self.detail_frame = None
@@ -38,6 +38,7 @@ class ExpandableItem(tk.Frame):
         self.item_name = item_name
         self.connection = connection
         self.args_order = ["Description", "Expected Price", "Cooking Instructions", "Nutritional Info"] if self.item_type == ItemType.RECIPE else ["Description", "Expected Price", "Duration", "Nutritional Info"]
+        self.customer_id = customer_id
 
         #print(self.attributes)
         font_style = ("Arial", font_size)
@@ -101,9 +102,10 @@ class ExpandableItem(tk.Frame):
                             cursor.execute(m_query, (arg,))
                             m_results = cursor.fetchall()
 
-                            print("recipes:", r_results)
-                            print("meal pleans:", m_results)
-
+                            #print("recipes:", r_results)
+                            #print("meal pleans:", m_results)
+                            if len(r_results) > 0:
+                                tk.Label(self.detail_frame, text="Recipes:", font=("Arial", 10, "bold"), anchor="w").pack(fill="x")
                             for r_result in r_results:
                                 ri_query = """
                                     SELECT I.* 
@@ -116,8 +118,16 @@ class ExpandableItem(tk.Frame):
                                 #print("searchring for id:", row[0], "ri result:", ri_result)
 
                                 s = ["Ingredients"] + [row[1] for row in ri_result]
-                                w = ExpandableItem(self.detail_frame, self.connection, r_result[1], ItemType.RECIPE, r_result[3], r_result[5], r_result[2], r_result[4], s, font_size=10, can_edit=False).pack(fill="x")
 
+                                ingredients_frame = tk.Frame(self.detail_frame)
+                                ingredients_frame.pack(fill="x")
+
+                                ExpandableItem(ingredients_frame, self.connection, r_result[1], ItemType.RECIPE, r_result[3], r_result[5], r_result[2], r_result[4], s, font_size=10, can_edit=False).pack(side="left", fill="x", expand=True)
+                                tk.Button(ingredients_frame, text="Save Recipe", command=lambda r_id=r_result[0]: self.save_recipe(r_id)).pack(side="right")
+                                #w = ExpandableItem(self.detail_frame, self.connection, r_result[1], ItemType.RECIPE, r_result[3], r_result[5], r_result[2], r_result[4], s, font_size=10, can_edit=False).pack(fill="x")
+
+                            if len(m_results) > 0:
+                                tk.Label(self.detail_frame, text="Meal Plans:", font=("Arial", 10, "bold"), anchor="w").pack(fill="x")
                             for row in m_results:
                                 mr_query = """
                                     SELECT R.* 
@@ -128,30 +138,15 @@ class ExpandableItem(tk.Frame):
                                 mr_result = cursor.fetchall()
                                 
                                 s = ["Recipes"] + [row[1] for row in mr_result]
-                                print(s)
+                                #print(s)
 
-                                w = ExpandableItem(self.detail_frame, self.connection, row[1], ItemType.MEALPLAN, row[4], row[3], row[2], row[5], s).pack(fill="x")
-                                #w.grid(row=i+1 + len(r_results), column=0, padx=5, pady=5, sticky="w")
+                                recipe_frame = tk.Frame(self.detail_frame)
+                                recipe_frame.pack(fill="x")
 
-
-                            '''
-                                m_query = """
-                                SELECT I.* 
-                                FROM RecipeIngredient AS RI 
-                                JOIN Ingredient AS I ON RI.Ingredient_ID = I.Ingredient_ID
-                                JOIN RECIPE AS R ON RI.Recipe_ID = R.Recipe_ID
-                                WHERE R.RName = %s"""
-                            cursor.execute(ri_query, (arg,))
-                            ri_result = cursor.fetchall()
-                            #print("searchring for id:", row[0], "ri result:", ri_result)
-
-                            s = ["Ingredients"] + [row[1] for row in ri_result]
-                            #print(r_result)
-                            #print(s)
-                            
-                            w = ExpandableItem(self.detail_frame, self.connection, arg, self.item_type, r_result[3], r_result[5], r_result[2], r_result[4], s, font_size=10, can_edit=False).pack(fill="x")
-                            '''
-                        else:
+                                ExpandableItem(recipe_frame, self.connection, row[1], ItemType.MEALPLAN, row[4], row[3], row[2], row[5], s, font_size=10, can_edit=False).pack(side="left", fill="x", expand=True)
+                                tk.Button(recipe_frame, text="Save Meal Plan", command=lambda m_id=row[0]: self.save_meal_plan(m_id)).pack(side="right")
+                        
+                        else: 
                             ExpandableItem(self.detail_frame, self.connection, arg, self.item_type, "add details here", font_size=10, can_edit=False).pack(fill="x")
                 else:
                     w = ExpandableItem(self.detail_frame, self.connection, arg[0], self.item_type - 1, *(arg[1:]), font_size=10, use_args_order=False, is_sub_item=True, can_edit=self.can_edit)
@@ -248,6 +243,38 @@ class ExpandableItem(tk.Frame):
 
         #TODO: implement
         print("still need to implement")
+
+    def save_recipe(self, recipe_id):
+        #print(f"Customer {self.customer_id} wants to save {recipe_id}")
+        
+        cursor = self.connection.cursor()
+        query = """
+            INSERT IGNORE INTO RSavedBy (Customer_ID, ID)
+            VALUES (%s, %s)
+            """
+        cursor.execute(query, (self.customer_id,recipe_id,))
+        self.connection.commit()
+
+        if cursor.rowcount > 0:
+            messagebox.showinfo("Success", "Your Saved Items updated successfully.")
+        else:
+            messagebox.showinfo("No Change", "No Item was saved.") 
+
+    def save_meal_plan(self, meal_plan_id):
+        print(f"Customer {self.customer_id} wants to save {meal_plan_id}")
+
+        cursor = self.connection.cursor()
+        query = """
+            INSERT IGNORE INTO MSavedBy (Customer_ID, ID)
+            VALUES (%s, %s)
+            """
+        cursor.execute(query, (self.customer_id,meal_plan_id,))
+        self.connection.commit()
+
+        if cursor.rowcount > 0:
+            messagebox.showinfo("Success", "Your Saved Items updated successfully.")
+        else:
+            messagebox.showinfo("No Change", "No Item was saved.") 
 
 
 class ItemType(Enum):
