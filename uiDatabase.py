@@ -736,7 +736,99 @@ class DBAppCustomer:
     Function to add an item to list
     TODO NEED TO IMPLEMENT, should probably make this sub function like grocery list's add
     '''
+    # Add this method inside the DBAppCustomer class in uiDatabase.py
     def add_item(self):
-        #TODO: implement
-        print("need to implement")
+        """
+        Opens a dialog to create a new Recipe or Meal Plan for the current customer,
+        inserts it into the database, and refreshes the My Items tab.
+        """
+        new_window = tk.Toplevel(self.root)
+        new_window.title("Add Item")
+        
+        # Select between adding a Recipe or a Meal Plan
+        tk.Label(new_window, text="Select Type:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
+        type_var = tk.StringVar(value="Recipe")
+        tk.Radiobutton(new_window, text="Recipe", variable=type_var, value="Recipe").grid(row=0, column=1, padx=5, pady=5)
+        tk.Radiobutton(new_window, text="Meal Plan", variable=type_var, value="Meal Plan").grid(row=0, column=2, padx=5, pady=5)
+        
+        # Frame to hold the field entries
+        fields_frame = tk.Frame(new_window)
+        fields_frame.grid(row=1, column=0, columnspan=3, padx=10, pady=10)
+        
+        # Define which labels to show for each type
+        labels = {
+            "Recipe": ["Name", "Description", "Instructions", "Nutritional Info", "Expected Price"],
+            "Meal Plan": ["Name", "Duration (days)", "Expected Price", "Description", "Nutritional Info"]
+        }
+        entries = {}
+        
+        # Render the appropriate fields when type changes
+        def render_fields(*args):
+            for widget in fields_frame.winfo_children():
+                widget.destroy()
+            current = type_var.get()
+            for i, label in enumerate(labels[current]):
+                tk.Label(fields_frame, text=label+":", anchor="w").grid(row=i, column=0, padx=5, pady=5, sticky="w")
+                e = tk.Entry(fields_frame, width=40)
+                e.grid(row=i, column=1, padx=5, pady=5)
+                entries[label] = e
+        type_var.trace_add("write", render_fields)
+        render_fields()
+        
+        # Handle submission of new item
+        def submit():
+            item_type = type_var.get()
+            cursor = self.connection.cursor()
+            if item_type == "Recipe":
+                # Generate a new Recipe_ID
+                cursor.execute("SELECT IFNULL(MAX(Recipe_ID),0)+1 FROM Recipe")
+                new_id = cursor.fetchone()[0]
+                data = (
+                    new_id,
+                    entries["Name"].get(),
+                    entries["Instructions"].get(),
+                    entries["Description"].get(),
+                    entries["Nutritional Info"].get(),
+                    int(entries["Expected Price"].get()),
+                    self.customer_id,
+                    False
+                )
+                cursor.execute(
+                    """
+                    INSERT INTO Recipe
+                      (Recipe_ID, RName, Cooking_Instructions, RDescription,
+                       Nutritional_Info, Expected_Price, Created_By, Is_Private_Visibility)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+                    """, data)
+            else:
+                # Generate a new MealPlan_ID
+                cursor.execute("SELECT IFNULL(MAX(Meal_Plan_ID),0)+1 FROM MealPlan")
+                new_id = cursor.fetchone()[0]
+                data = (
+                    new_id,
+                    entries["Name"].get(),
+                    int(entries["Duration (days)"].get()),
+                    int(entries["Expected Price"].get()),
+                    entries["Description"].get(),
+                    entries["Nutritional Info"].get(),
+                    self.customer_id,
+                    False
+                )
+                cursor.execute(
+                    """
+                    INSERT INTO MealPlan
+                      (Meal_Plan_ID, MName, Duration, Expected_Price,
+                       MDescription, Nutritional_Info, Created_By, Is_Private_Visibility)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+                    """, data)
+            self.connection.commit()
+            messagebox.showinfo("Success", f"{item_type} added successfully.")
+            # Refresh the My Items tab
+            for widget in self.my_items_tab.winfo_children():
+                widget.destroy()
+            self.display_my_items()
+            new_window.destroy()
+
+        tk.Button(new_window, text="Add", command=submit).grid(row=2, column=1, pady=10)
+
 
