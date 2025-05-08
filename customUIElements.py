@@ -61,6 +61,9 @@ class ExpandableItem(tk.Frame):
         else:
             self.detail_frame = tk.Frame(self, bg="#f0f0f0", padx=10, pady=5)
 
+            '''
+            Placing all the elements in the expanded portion
+            '''
             for i, arg in enumerate(self.attributes):
 
                 if i < len(self.args_order):
@@ -159,7 +162,7 @@ class ExpandableItem(tk.Frame):
                 if not self.is_sub_item:
                     tk.Button(self.detail_frame, text="Edit", command=self.edit_item).pack(anchor="e", pady=5)
                 else:
-                    tk.Button(self.detail_frame, text=f"Add/Remove {self.item_type}", command=self.remove_item).pack(anchor="e", pady=5)
+                    tk.Button(self.detail_frame, text=f"Remove {self.item_type}", command=self.remove_item).pack(anchor="e", pady=5)
             self.detail_frame.pack(fill="x")
             self.expanded = True
 
@@ -240,11 +243,84 @@ class ExpandableItem(tk.Frame):
 
     def remove_item(self):
         new_window = tk.Toplevel(self.master)
-        new_window.title("Add/Remove item")
-        l = tk.Label(new_window, text="Need to implement the ability to add/remove items", anchor="w").grid(row=0, column=0, padx=10, pady=5)
+        new_window.title("Remove item")
+        #l = tk.Label(new_window, text="Need to implement the ability to add/remove items", anchor="w").grid(row=0, column=0, padx=10, pady=5)
 
-        #TODO: implement
-        print("still need to implement")
+        entries = [child for child in self.detail_frame.winfo_children() if isinstance(child, ExpandableItem)]
+        remove_entry_type = entries[0].item_type
+        remove_names = [entry.item_name for entry in entries]
+        #print(remove_entry_type, ", ", remove_names)
+
+
+        self.checkbox_vars = []
+        for i, arg in enumerate(remove_names):
+            l = tk.Label(new_window, text=f"{arg}", anchor="w").grid(row=i, column=0, padx=10, pady=5)
+
+            var = tk.BooleanVar()
+            checkbox = tk.Checkbutton(new_window, variable=var)
+            checkbox.grid(row=i, column=1)
+            self.checkbox_vars.append(var)
+
+        def submit_remove():
+            if isinstance(self.master.master, ExpandableItem):
+                master_item = self.master.master
+                
+                results = [var.get() for var in self.checkbox_vars]
+                #print(results)
+
+                cursor = self.connection.cursor()
+                e_query = """
+                    SELECT * 
+                    FROM """ + str(master_item.item_type) + """
+                    WHERE """ + master_item.item_type[0] + """Name = %s
+                    """
+                    
+                cursor.execute(e_query, (master_item.item_name,))
+                e_result = cursor.fetchall()
+                e_id = e_result[0][0]
+                #print(e_id)
+
+                for i, result in enumerate(results):
+                    if result:
+                        deleted_item_name = ""
+                        for widget in new_window.grid_slaves(row=i):
+                            if isinstance(widget, tk.Label):
+                                if widget.grid_info()["column"] == 0:
+                                    deleted_item_name = widget.cget('text')
+                            widget.destroy()
+                        
+                        #print("item to delete is:", deleted_item_name)
+                
+                        #print(master_item.item_name, ", ", master_item.item_type)
+
+
+                        re_query = """
+                            SELECT * 
+                            FROM """ + str(remove_entry_type) + """
+                            WHERE """ + remove_entry_type[0] + """Name = %s
+                            """
+                            
+                        cursor.execute(re_query, (deleted_item_name,))
+                        re_result = cursor.fetchall()
+                        re_id = re_result[0][0]
+                        #print(re_id, ", ", e_id)
+                        #print(str(master_item.item_type) + str(remove_entry_type))
+
+                        r_query = """
+                            DELETE FROM """ + str(master_item.item_type) + str(remove_entry_type) + """ WHERE """ + str(master_item.item_type) + """_ID = %s AND """ + str(remove_entry_type) + """_ID = %s;
+                        """
+                        cursor.execute(r_query, (e_id, re_id,))
+                        self.connection.commit()
+                        #re_id = re_result[0][0]
+
+                        if cursor.rowcount > 0:
+                            messagebox.showinfo("Success", "Items deleted successfully.")
+                        else:
+                            messagebox.showinfo("No Change", "No item deleted.") 
+
+        tk.Button(new_window, text="Remove Selected Items", width=20, command=submit_remove).grid(row=4, column=0, columnspan=2, padx=(0,25), pady=5, sticky="ew")
+
+        #TODO: send message to main ui to update accordingly
 
     def save_recipe(self, recipe_id):
         #print(f"Customer {self.customer_id} wants to save {recipe_id}")
@@ -263,7 +339,7 @@ class ExpandableItem(tk.Frame):
             messagebox.showinfo("No Change", "No Item was saved.") 
 
     def save_meal_plan(self, meal_plan_id):
-        print(f"Customer {self.customer_id} wants to save {meal_plan_id}")
+        #print(f"Customer {self.customer_id} wants to save {meal_plan_id}")
 
         cursor = self.connection.cursor()
         query = """
