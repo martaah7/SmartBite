@@ -281,4 +281,3 @@ VALUES
   ('employee1', 'EmpPass123!',    'employee', 1),
   ('customer1', 'CustPass1!',     'customer', 1),
   ('customer2', 'CustPass2!',     'customer', 1);
-

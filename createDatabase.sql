@@ -103,6 +103,17 @@ CREATE TABLE ReviewRating (
     FOREIGN KEY (Recipe_ID) REFERENCES Recipe(Recipe_ID)
 );
 
+CREATE TABLE Review (
+    Review_ID INT AUTO_INCREMENT PRIMARY KEY,
+    Customer_ID INT NOT NULL,
+    ReviewText VARCHAR(511),
+    Rating INT CHECK (Rating BETWEEN 1 AND 5),
+    Review_Type ENUM('Recipe', 'MealPlan'),
+    Item_ID INT NOT NULL,
+    FOREIGN KEY (Customer_ID) REFERENCES Customers(Customer_ID)
+    -- Item_ID will map to either Recipe or MealPlan depending on Review_Type
+);
+
 --  Restocks Table
 CREATE TABLE Restocks (
     Store_ID INT NOT NULL,

@@ -152,6 +152,8 @@ class ExpandableItem(tk.Frame):
                     w = ExpandableItem(self.detail_frame, self.connection, arg[0], self.item_type - 1, *(arg[1:]), font_size=10, use_args_order=False, is_sub_item=True, can_edit=self.can_edit)
                     w.pack(fill="x")
             #tk.Label(self.detail_frame, text=f"Price: ${self.price}", anchor="w").pack(fill="x")
+            if not self.is_sub_item and self.item_type in (ItemType.RECIPE, ItemType.MEALPLAN):
+                self._add_reviews_section(self.detail_frame)
 
             if self.can_edit:
                 if not self.is_sub_item:
@@ -275,6 +277,33 @@ class ExpandableItem(tk.Frame):
             messagebox.showinfo("Success", "Your Saved Items updated successfully.")
         else:
             messagebox.showinfo("No Change", "No Item was saved.") 
+    def _add_reviews_section(self, parent_frame):
+        review_frame = tk.LabelFrame(parent_frame, text="Reviews", padx=5, pady=5)
+        review_frame.pack(fill="x", pady=10)
+
+        cursor = self.connection.cursor()
+        item_field = "Recipe_ID" if self.item_type == ItemType.RECIPE else "Meal_Plan_ID"
+        item_table = "Recipe" if self.item_type == ItemType.RECIPE else "MealPlan"
+        name_field = "RName" if self.item_type == ItemType.RECIPE else "MName"
+
+        # Get item ID
+        cursor.execute(f"SELECT {item_field} FROM {item_table} WHERE {name_field} = %s", (self.item_name,))
+        item = cursor.fetchone()
+        if item:
+            item_id = item[0]
+            cursor.execute("""
+                SELECT R.ReviewText, R.Rating, C.CName
+                FROM Review R
+                JOIN Customers C ON R.Customer_ID = C.Customer_ID
+                WHERE R.Item_ID = %s AND R.Review_Type = %s
+            """, (item_id, str(self.item_type)))
+            reviews = cursor.fetchall()
+
+            if reviews:
+                for review_text, rating, cname in reviews:
+                    tk.Label(review_frame, text=f"{cname}: {rating}/5 - {review_text}", anchor="w", justify="left", wraplength=400).pack(fill="x", padx=5, pady=2)
+            else:
+                tk.Label(review_frame, text="No reviews yet.", anchor="w").pack(fill="x")
 
 
 class ItemType(Enum):
