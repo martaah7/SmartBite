@@ -563,7 +563,7 @@ class DBAppCustomer:
                     SELECT R.* 
                     FROM MealPlanRecipe AS MR 
                     JOIN Recipe AS R ON MR.Recipe_ID = R.Recipe_ID
-                    WHERE MR.Meal_Plan_ID = %s"""
+                    WHERE MR.MealPlan_ID = %s"""
                 cursor.execute(mr_query, (row[0],))
                 mr_result = cursor.fetchall()
                 
@@ -657,7 +657,7 @@ class DBAppCustomer:
                     SELECT R.* 
                     FROM MealPlanRecipe AS MR 
                     JOIN Recipe AS R ON MR.Recipe_ID = R.Recipe_ID
-                    WHERE MR.Meal_Plan_ID = %s"""
+                    WHERE MR.MealPlan_ID = %s"""
                 cursor.execute(mr_query, (row[0],))
                 mr_result = cursor.fetchall()
                 
@@ -682,7 +682,7 @@ class DBAppCustomer:
             cursor.execute(following_query)
             follower_rows = cursor.fetchall()
             following_ids = [f[1] for f in follower_rows]
-            print(following_ids)
+            #print(following_ids)
             
             '''
             My Friends UI
@@ -723,7 +723,7 @@ class DBAppCustomer:
                 #print("searchring for id:", row[0], "ri result:", ri_result)
 
                 s = cname_result[0][0]
-                print(s)
+                #print(s)
             
                 w = ExpandableItem(following_frame, self.connection, s, ItemType.CUSTOMER, following_id, can_edit=False, is_sub_item=True, customer_id=self.customer_id)
                 w.grid(row=i+1, column=0, padx=5, pady=5, sticky="w")

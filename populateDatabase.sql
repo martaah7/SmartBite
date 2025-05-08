@@ -196,7 +196,7 @@ VALUES
   (20, 'Holiday Plan', 7, 75, 'Festive recipes.', 'Rich in Flavors', 20, FALSE);
 
 -- Sample MealPlanRecipe Table
-INSERT INTO MealPlanRecipe (Recipe_ID, Meal_Plan_ID)
+INSERT INTO MealPlanRecipe (Recipe_ID, MealPlan_ID)
 VALUES 
   (1, 1),
   (2, 2),

@@ -86,10 +86,10 @@ CREATE TABLE MealPlan (
 -- primary key is (meal plan id id, recipe id)
 CREATE TABLE MealPlanRecipe (
     Recipe_ID INT NOT NULL,
-    Meal_Plan_ID INT NOT NULL,
-    PRIMARY KEY (Meal_Plan_ID, Recipe_ID),
+    MealPlan_ID INT NOT NULL,
+    PRIMARY KEY (MealPlan_ID, Recipe_ID),
     FOREIGN KEY (Recipe_ID) REFERENCES Recipe(Recipe_ID),
-    FOREIGN KEY (Meal_Plan_ID) REFERENCES MealPlan(Meal_Plan_ID)
+    FOREIGN KEY (MealPlan_ID) REFERENCES MealPlan(Meal_Plan_ID)
 );
 
 --  ReviewRating Table
