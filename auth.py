@@ -5,7 +5,7 @@ def get_connection():
         host='localhost',
         database='healthApp',
         user='root',
-        password='Wangzai!1$'
+        password='Demonassassin2$'
     )
 
 def get_user(username: str):
