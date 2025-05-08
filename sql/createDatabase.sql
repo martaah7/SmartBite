@@ -94,7 +94,7 @@ CREATE TABLE MealPlanRecipe (
 
 --  ReviewRating Table
 CREATE TABLE ReviewRating (
-    Review_ID INT PRIMARY KEY,
+    Review_ID INT AUTO_INCREMENT PRIMARY KEY,
     Customer_ID INT NOT NULL,
     Review_Type  VARCHAR(10) NOT NULL,
     Item_ID INT NOT NULL,
