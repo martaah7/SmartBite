@@ -316,6 +316,22 @@ class DBAppCustomer:
         tab_control.add(self.reviews_tab, text="Reviews")
         self.display_reviews()
 
+        # Tab 6
+        self.popular_recipes_tab = tk.Frame(tab_control)
+        tab_control.add(self.popular_recipes_tab, text="Popular Recipes")
+        self.display_popular_items(self.popular_recipes_tab, "Recipe")
+
+        # Tab 7
+        self.popular_meals_tab = tk.Frame(tab_control)
+        tab_control.add(self.popular_meals_tab, text="Popular Meal Plans")
+        self.display_popular_items(self.popular_meals_tab, "MealPlan")
+
+        # Tab 8
+        self.my_reviews_tab = tk.Frame(tab_control)
+        tab_control.add(self.my_reviews_tab, text="My Reviews")
+        self.display_my_reviews()
+
+
     def close_connection(self):
         if self.connection and self.connection.is_connected():
             self.connection.close()
@@ -433,6 +449,57 @@ class DBAppCustomer:
             for widget in self.reviews_tab.winfo_children():
                 widget.destroy()
             self.display_reviews()
+
+        tk.Button(dialog, text="Submit", command=submit_review).grid(row=4, column=1, pady=10)
+
+    '''
+    Prefilled version
+    '''
+    def open_review_dialog_prefilled(self, review_type, item_id, item_name):
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Leave a Review")
+
+        # Review Type (not editable)
+        tk.Label(dialog, text="Review Type:").grid(row=0, column=0)
+        tk.Label(dialog, text=review_type).grid(row=0, column=1)
+
+        # Item (not editable)
+        tk.Label(dialog, text="Item:").grid(row=1, column=0)
+        tk.Label(dialog, text=item_name).grid(row=1, column=1)
+
+        # Rating
+        tk.Label(dialog, text="Rating (1-5):").grid(row=2, column=0)
+        rating_entry = tk.Entry(dialog)
+        rating_entry.grid(row=2, column=1)
+
+        # Review Text
+        tk.Label(dialog, text="Review Text:").grid(row=3, column=0)
+        text_entry = tk.Entry(dialog, width=40)
+        text_entry.grid(row=3, column=1)
+
+        def submit_review():
+            try:
+                rating = int(rating_entry.get())
+                review_text = text_entry.get()
+                if not (1 <= rating <= 5):
+                    raise ValueError
+            except ValueError:
+                messagebox.showerror("Input Error", "Invalid rating.")
+                return
+
+            cursor = self.connection.cursor()
+            cursor.execute(
+                "INSERT INTO Review (Customer_ID, ReviewText, Rating, Review_Type, Item_ID) VALUES (%s, %s, %s, %s, %s)",
+                (self.customer_id, review_text, rating, review_type, item_id)
+            )
+            self.connection.commit()
+            messagebox.showinfo("Success", "Review submitted!")
+            dialog.destroy()
+            if review_type=="Recipe":
+                self.refresh_popular_items_tab(self.popular_recipes_tab, "Recipe")
+            else:
+                self.refresh_popular_items_tab(self.popular_meals_tab, "MealPlan")
+            self.refresh_my_reviews_tab()
 
         tk.Button(dialog, text="Submit", command=submit_review).grid(row=4, column=1, pady=10)
 
@@ -946,6 +1013,138 @@ class DBAppCustomer:
             new_window.destroy()
 
         tk.Button(new_window, text="Add", command=submit).grid(row=2, column=1, pady=10)
+
+    def display_popular_items(self, tab, item_type):
+        cursor = self.connection.cursor()
+        if item_type == "Recipe":
+            query = """
+                SELECT R.Recipe_ID, R.RName, R.RDescription, R.Expected_Price,
+                       R.Cooking_Instructions, R.Nutritional_Info,
+                       AVG(Rev.Rating) AS AvgRating, COUNT(Rev.Rating) AS NumReviews
+                FROM Recipe AS R
+                LEFT JOIN Review AS Rev
+                  ON Rev.Item_ID = R.Recipe_ID AND Rev.Review_Type='Recipe'
+                GROUP BY R.Recipe_ID
+                ORDER BY NumReviews DESC, AvgRating DESC
+                LIMIT 10
+            """
+        else:
+            query = """
+                SELECT M.Meal_Plan_ID, M.MName, M.MDescription, M.Expected_Price,
+                       M.Duration, M.Nutritional_Info,
+                       AVG(Rev.Rating) AS AvgRating, COUNT(Rev.Rating) AS NumReviews
+                FROM MealPlan AS M
+                LEFT JOIN Review AS Rev
+                  ON Rev.Item_ID = M.Meal_Plan_ID AND Rev.Review_Type='MealPlan'
+                GROUP BY M.Meal_Plan_ID
+                ORDER BY NumReviews DESC, AvgRating DESC
+                LIMIT 10
+            """
+        cursor.execute(query)
+        items = cursor.fetchall()
+
+        tk.Label(tab, text=f"Popular {item_type}s", font=("Arial", 24, "bold")).pack(pady=10)
+
+        for row in items:
+            item_id, name, desc, price, extra, nutri, avg_rating, num_reviews = row
+
+            container = tk.Frame(tab, bd=1, relief="solid", padx=10, pady=5, cursor="hand2")
+            container.pack(fill="x", padx=10, pady=5)
+
+            #details frame
+            details_frame = tk.Frame(container, bg="#f0f0f0", padx=10, pady=5)
+
+            # Header with name + rating
+            header = tk.Frame(container)
+            header.pack(fill="x")
+            tk.Label(header, text=name, font=("Arial",14,"bold")).pack(side="left")
+            rating_disp = "No reviews yet." if num_reviews==0 else f"{round(avg_rating,1)}/5"
+            tk.Label(header, text=f"Rating: {rating_disp}", font=("Arial",12)).pack(side="right")
+
+            # toggle on click
+            def toggle(df=details_frame):
+                if df.winfo_ismapped(): df.pack_forget()
+                else: df.pack(fill="x", padx=10, pady=5)
+            # Bind both the container and header
+            container.bind("<Button-1>", lambda e, df=details_frame: toggle(df))
+            header.bind("<Button-1>",   lambda e, df=details_frame: toggle(df))
+
+            # Populate the details_frame
+            tk.Label(details_frame, text=f"Description: {desc}", anchor="w",
+                     wraplength=600, justify="left").pack(fill="x", pady=2)
+            tk.Label(details_frame, text=f"Expected Price: ${price}", anchor="w").pack(fill="x", pady=2)
+            if item_type=="Recipe":
+                tk.Label(details_frame, text=f"Cooking Instructions: {extra}", anchor="w",
+                         wraplength=600, justify="left").pack(fill="x", pady=2)
+            else:
+                tk.Label(details_frame, text=f"Duration: {extra} days", anchor="w").pack(fill="x", pady=2)
+            tk.Label(details_frame, text=f"Nutritional Info: {nutri}", anchor="w",
+                     wraplength=600, justify="left").pack(fill="x", pady=2)
+
+            # review and save buttons
+            tk.Button(details_frame, text="Leave a Review",
+                      command=lambda it=item_type, iid=item_id, nm=name:
+                          self.open_review_dialog_prefilled(it, iid, nm)
+            ).pack(anchor="e", pady=5)
+
+            tk.Button(details_frame, text=f"Save {item_type}",
+                      command=lambda it=item_type, iid=item_id:
+                          self.save_item(it, iid)
+            ).pack(anchor="e", pady=2)
+
+    def display_my_reviews(self):
+        cursor = self.connection.cursor()
+        query = """
+            SELECT R.ReviewText, R.Rating, R.Review_Type, 
+                IFNULL(M.MName, Re.RName) AS ItemName
+            FROM Review AS R
+            LEFT JOIN MealPlan AS M ON R.Item_ID = M.Meal_Plan_ID AND R.Review_Type='MealPlan'
+            LEFT JOIN Recipe AS Re ON R.Item_ID = Re.Recipe_ID AND R.Review_Type='Recipe'
+            WHERE R.Customer_ID = %s
+        """
+        cursor.execute(query, (self.customer_id,))
+        reviews = cursor.fetchall()
+
+        tk.Label(self.my_reviews_tab, text="My Reviews", font=("Arial", 24, "bold")).pack(pady=10)
+
+        for text, rating, rtype, name in reviews:
+            frame = tk.Frame(self.my_reviews_tab, bd=1, relief="solid", padx=10, pady=5)
+            frame.pack(fill="x", padx=10, pady=5)
+            tk.Label(frame, text=f"{rtype}: {name}", font=("Arial", 14)).pack(anchor="w")
+            tk.Label(frame, text=f"Rating: {rating}/5", font=("Arial", 12)).pack(anchor="w")
+            tk.Label(frame, text=text, font=("Arial", 10)).pack(anchor="w")
+
+    def save_item(self, item_type, item_id):
+        cursor = self.connection.cursor()
+        if item_type == "Recipe":
+            cursor.execute(
+                "INSERT IGNORE INTO RSavedBy (Customer_ID, ID) VALUES (%s, %s)",
+                (self.customer_id, item_id)
+            )
+        else:  # MealPlan
+            cursor.execute(
+                "INSERT IGNORE INTO MSavedBy (Customer_ID, ID) VALUES (%s, %s)",
+                (self.customer_id, item_id)
+            )
+        self.connection.commit()
+        messagebox.showinfo("Saved", f"{item_type} saved to your saved items.")
+        # Refresh the Saved Items tab
+        for w in self.saved_items_tab.winfo_children():
+            w.destroy()
+        self.display_my_saved_items()
+
+    def refresh_my_reviews_tab(self):
+        for widget in self.my_reviews_tab.winfo_children():
+            widget.destroy()
+        self.display_my_reviews()
+
+    def refresh_popular_items_tab(self, tab, item_type):
+        for w in tab.winfo_children():
+            w.destroy()
+        self.display_popular_items(tab, item_type)
+
+
+
 
 class DBAppAdmin:
     def __init__(self, root, connection, user):

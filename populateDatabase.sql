@@ -1,7 +1,7 @@
 -- Copy and paste this into same directory as createDatabase.sql, connect to mysql, run commands below in order to populate the database with the data
 -- FOLLOW createDatabase.sql COMMANDS FIRST
 -- USE healthApp; (if youre not already using the db)
---  source ./populateData.sql
+--  source ./populateDatabase.sql
 
 -- Sample Employee Table
 INSERT INTO Employee (Employee_ID, EName)
