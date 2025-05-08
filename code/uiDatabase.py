@@ -5,6 +5,10 @@ from tkinter import messagebox, scrolledtext, simpledialog
 from tkinter import ttk
 import auth
 
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from collections import Counter
+
 from customUIElements import ScrollableFrame, ExpandableItem, ItemType
 
 class DBApp:
@@ -1278,7 +1282,144 @@ class DBAppAdmin:
             count = cursor.fetchone()[0]
             tk.Label(stats_frame, text=f"{label}: {count}", font=("Arial",14)).grid(row=i, column=0, sticky="w", pady=2)
 
-        # Detailed report area
-        detail_frame = ttk.LabelFrame(self.report_tab, text="Detailed Reports")
-        detail_frame.pack(fill="both", expand=True, padx=10, pady=(0,10))
-        tk.Label(detail_frame, text="(Add graphs or tables here)", font=("Arial",12,"italic")).pack(pady=20)
+        
+        # Tabbed interface
+        tab_control = ttk.Notebook(stats_frame)
+        tab_control.grid(row=len(queries), column=0, sticky="w", pady=2)
+
+        # Tab 1: Recipe Data
+        self.recipe_report_tab = tk.Frame(tab_control)
+        tab_control.add(self.recipe_report_tab, text="Recipe Data")
+        self.display_recipe_data()
+
+        # Tab 2: Meal Plan Data
+        self.meal_plan_report_tab = tk.Frame(tab_control)
+        tab_control.add(self.meal_plan_report_tab, text="Meal Plan Data")
+        self.display_meal_plan_data()
+
+    def display_recipe_data(self):
+        cursor = self.conn.cursor()
+        query = "SELECT * FROM ReviewRating WHERE Review_Type = 'Recipe';"
+        cursor.execute(query)
+        reviews = cursor.fetchall()
+
+        ratings = [row[4] for row in reviews]
+        rating_counts = Counter(ratings)
+        counts = [rating_counts.get(i, 0) for i in range(1, 6)]
+
+        # Create graph
+        fig, ax = plt.subplots(figsize=(5, 4))
+        ax.bar(range(1, 6), counts, color='skyblue', edgecolor='black')
+        ax.set_title('Distribution of Review Ratings')
+        ax.set_xlabel('Rating (Stars)')
+        ax.set_ylabel('Number of Reviews')
+        ax.set_xticks(range(1, 6))
+
+        # place graph on GUI instead of new window
+        canvas = FigureCanvasTkAgg(fig, master=self.recipe_report_tab)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill='both', expand=True)
+
+        recipe_ratings = {}
+        for review in reviews:
+            if review[2] == "Recipe":
+                id  = review[3]
+                if id in recipe_ratings:
+                    recipe_ratings[id] += [review[4]]
+                else:
+                    recipe_ratings[id] = [review[4]]
+
+        min_ratings_req = 2
+        averages = {k: sum(v) / len(v) for k, v in recipe_ratings.items() if len(v) >= min_ratings_req}
+        max_key = max(averages, key=averages.get) 
+        #print(max_key)
+
+        query = "SELECT RNAME FROM Recipe WHERE Recipe_ID = %s"
+        cursor.execute(query, (max_key,))
+        ba_review_recipe_name = cursor.fetchall()
+
+        tk.Label(self.recipe_report_tab, text=f"{ba_review_recipe_name[0][0]} is the recipe with the best average rating, with an average of {averages[max_key]}.", font=("Arial", 10)).pack(fill="x", pady=2)
+
+        query = "SELECT * FROM RSAVEDBY"
+        cursor.execute(query)
+        saved_info = cursor.fetchall()
+        #print(saved_info)
+
+        save_counts = {}
+        for save_pair in saved_info:
+            recipe_id = save_pair[1]
+            if recipe_id in save_counts:
+                save_counts[recipe_id] += 1
+            else:
+                save_counts[recipe_id] = 1
+        max_key = max(save_counts, key=save_counts.get)
+        #print(max_key)
+        query = "SELECT RNAME FROM Recipe WHERE Recipe_ID = %s"
+        cursor.execute(query, (max_key,))
+        sa_review_recipe_name = cursor.fetchall()
+
+        tk.Label(self.recipe_report_tab, text=f"{sa_review_recipe_name[0][0]} is the recipe with the most saves, with {save_counts[max_key]} saves.", font=("Arial", 10)).pack(fill="x", pady=2)
+
+    def display_meal_plan_data(self):
+        cursor = self.conn.cursor()
+        query = "SELECT * FROM ReviewRating WHERE Review_Type = 'MealPlan';"
+        cursor.execute(query)
+        reviews = cursor.fetchall()
+
+        ratings = [row[4] for row in reviews]
+        rating_counts = Counter(ratings)
+        counts = [rating_counts.get(i, 0) for i in range(1, 6)]
+
+        # Create graph
+        mp_fig, mp_ax = plt.subplots(figsize=(5, 4))
+        mp_ax.bar(range(1, 6), counts, color='skyblue', edgecolor='black')
+        mp_ax.set_title('Distribution of Review Ratings')
+        mp_ax.set_xlabel('Rating (Stars)')
+        mp_ax.set_ylabel('Number of Reviews')
+        mp_ax.set_xticks(range(1, 6))
+
+        # place graph on GUI instead of new window
+        canvas = FigureCanvasTkAgg(mp_fig, master=self.meal_plan_report_tab)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill='both', expand=True)
+
+        recipe_ratings = {}
+        for review in reviews:
+            if review[2] == "MealPlan":
+                id  = review[3]
+                if id in recipe_ratings:
+                    recipe_ratings[id] += [review[4]]
+                else:
+                    recipe_ratings[id] = [review[4]]
+
+        min_ratings_req = 2
+        averages = {k: sum(v) / len(v) for k, v in recipe_ratings.items() if len(v) >= min_ratings_req}
+        max_key = max(averages, key=averages.get) 
+        #print(max_key)
+
+        query = "SELECT MNAME FROM MealPlan WHERE Meal_Plan_ID = %s"
+        cursor.execute(query, (max_key,))
+        ba_review_recipe_name = cursor.fetchall()
+
+        tk.Label(self.meal_plan_report_tab, text=f"{ba_review_recipe_name[0][0]} is the meal plan with the best average rating, with an average of {averages[max_key]}.", font=("Arial", 10)).pack(fill="x", pady=2)
+
+        query = "SELECT * FROM MSAVEDBY"
+        cursor.execute(query)
+        saved_info = cursor.fetchall()
+        #print(saved_info)
+
+        save_counts = {}
+        for save_pair in saved_info:
+            recipe_id = save_pair[1]
+            if recipe_id in save_counts:
+                save_counts[recipe_id] += 1
+            else:
+                save_counts[recipe_id] = 1
+        max_key = max(save_counts, key=save_counts.get)
+        #print(max_key)
+        query = "SELECT MNAME FROM MealPlan WHERE Meal_Plan_ID = %s"
+        cursor.execute(query, (max_key,))
+        sa_review_recipe_name = cursor.fetchall()
+
+        tk.Label(self.meal_plan_report_tab, text=f"{sa_review_recipe_name[0][0]} is the meal plan with the most saves, with {save_counts[max_key]} saves.", font=("Arial", 10)).pack(fill="x", pady=2)
+
