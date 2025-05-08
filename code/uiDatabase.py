@@ -320,22 +320,17 @@ class DBAppCustomer:
         tab_control.add(self.grocery_tab, text="My Grocery List")
         self.display_grocery_list()
 
-        # --- Tab 5: Reviews ---
-        self.reviews_tab = tk.Frame(tab_control)
-        tab_control.add(self.reviews_tab, text="Reviews")
-        self.display_reviews()
-
-        # Tab 6
+        # Tab 5
         self.popular_recipes_tab = tk.Frame(tab_control)
         tab_control.add(self.popular_recipes_tab, text="Popular Recipes")
         self.display_popular_items(self.popular_recipes_tab, "Recipe")
 
-        # Tab 7
+        # Tab 6
         self.popular_meals_tab = tk.Frame(tab_control)
         tab_control.add(self.popular_meals_tab, text="Popular Meal Plans")
         self.display_popular_items(self.popular_meals_tab, "Meal Plan")
 
-        # Tab 8
+        # Tab 7
         self.my_reviews_tab = tk.Frame(tab_control)
         tab_control.add(self.my_reviews_tab, text="My Reviews")
         self.display_my_reviews()
@@ -351,116 +346,6 @@ class DBAppCustomer:
         FUNCTIONS THAT POPULATE MAJOR TAB PAGES
 
     --------------------------------------------------'''
-    '''
-    Displays all the information under the Reviews tab
-    '''
-    def display_reviews(self):
-        try:
-            cursor = self.connection.cursor()
-            # Query to get reviews with recipe or meal plan names
-            query = """
-                SELECT R.Review_ID, R.RDescription, R.Rating, R.Review_Type, 
-                       C.CName, IFNULL(M.MName, Re.RName) AS ItemName
-                FROM ReviewRating AS R
-                LEFT JOIN Customers AS C ON R.Customer_ID = C.Customer_ID
-                LEFT JOIN MealPlan AS M ON R.Item_ID = M.Meal_Plan_ID AND R.Review_Type = 'MealPlan'
-                LEFT JOIN Recipe AS Re ON R.Item_ID = Re.Recipe_ID AND R.Review_Type = 'Recipe'
-                WHERE R.Customer_ID = %s
-            """
-            cursor.execute(query, (self.customer_id,))
-            reviews = cursor.fetchall()
-
-            # Header
-            tk.Label(self.reviews_tab, text="My Reviews", font=("Arial", 32, "bold")).pack(pady=10)
-
-            # List of reviews
-            for rev in reviews:
-                text = f"Item: {rev[5]} ({rev[3]})\nRating: {rev[2]}/5\nReview: {rev[1]}"
-                frame = tk.Frame(self.reviews_tab, bd=1, relief="solid", padx=10, pady=5)
-                frame.pack(fill="x", padx=10, pady=5)
-                tk.Label(frame, text=text, justify="left", anchor="w", font=("Arial", 12)).pack(fill="x")
-
-            # Write Review button
-            tk.Button(self.reviews_tab, text="Write a Review", command=self.open_review_dialog).pack(pady=10)
-
-        except Error as e:
-            messagebox.showerror("Review Display Error", str(e))
-    
-    '''
-    Opens a popup dialog for the user to submit a new review
-    '''
-    def open_review_dialog(self):
-        dialog = tk.Toplevel(self.root)
-        dialog.title("Write a Review")
-
-        # Select between Recipe or Meal Plan
-        tk.Label(dialog, text="Review Type:").grid(row=0, column=0)
-        type_var = tk.StringVar()
-        type_combo = ttk.Combobox(dialog, textvariable=type_var, values=["Recipe", "Meal Plan"], state="readonly")
-        type_combo.grid(row=0, column=1)
-
-        # Dropdown for item names
-        tk.Label(dialog, text="Select Item:").grid(row=1, column=0)
-        item_var = tk.StringVar()
-        item_combo = ttk.Combobox(dialog, textvariable=item_var, state="readonly")
-        item_combo.grid(row=1, column=1)
-
-        # Rating field
-        tk.Label(dialog, text="Rating (1-5):").grid(row=2, column=0)
-        rating_entry = tk.Entry(dialog)
-        rating_entry.grid(row=2, column=1)
-
-        # Review text
-        tk.Label(dialog, text="Review Text:").grid(row=3, column=0)
-        text_entry = tk.Entry(dialog, width=40)
-        text_entry.grid(row=3, column=1)
-
-        item_name_to_id = {}  # To store mapping
-
-        def update_items(*args):
-            item_combo.set("")
-            item_name_to_id.clear()
-            cursor = self.connection.cursor()
-            if type_var.get() == "Recipe":
-                cursor.execute("SELECT Recipe_ID, RName FROM Recipe")
-            else:
-                cursor.execute("SELECT Meal_Plan_ID, MName FROM MealPlan")
-            rows = cursor.fetchall()
-            for item_id, name in rows:
-                item_name_to_id[name] = item_id
-            item_combo["values"] = list(item_name_to_id.keys())
-
-        type_var.trace_add("write", update_items)
-
-        def submit_review():
-            review_type = type_var.get()
-            item_name = item_var.get()
-            item_id = item_name_to_id.get(item_name)
-            try:
-                rating = int(rating_entry.get())
-                review_text = text_entry.get()
-                if not (1 <= rating <= 5):
-                    raise ValueError
-            except ValueError:
-                messagebox.showerror("Input Error", "Invalid rating or item selection.")
-                return
-
-            cursor = self.connection.cursor()
-            cursor.execute(
-                "INSERT INTO ReviewRating (Customer_ID, Review_Type, Item_ID, Rating, RDescription) VALUES (%s, %s, %s, %s, %s)",
-                (self.customer_id, review_type, item_id, rating, review_text)
-            )
-            self.connection.commit()
-            messagebox.showinfo("Success", "Review submitted!")
-            dialog.destroy()
-
-            # Refresh the reviews tab
-            for widget in self.reviews_tab.winfo_children():
-                widget.destroy()
-            self.display_reviews()
-
-        tk.Button(dialog, text="Submit", command=submit_review).grid(row=4, column=1, pady=10)
-
     '''
     Prefilled version
     '''
