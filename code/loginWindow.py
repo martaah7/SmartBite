@@ -46,7 +46,7 @@ class LoginWindow:
         elif role == 'employee':
             app = DBApp(main, conn)
         else:
-            app = DBAppCustomer(main, conn)
+            app = DBAppCustomer(main, conn, user)
         main.mainloop()
 
 
