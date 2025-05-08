@@ -445,8 +445,8 @@ class ExpandableItem(tk.Frame):
         if item:
             item_id = item[0]
             cursor.execute("""
-                SELECT R.ReviewText, R.Rating, C.CName
-                FROM Review R
+                SELECT R.RDescription, R.Rating, C.CName
+                FROM ReviewRating R
                 JOIN Customers C ON R.Customer_ID = C.Customer_ID
                 WHERE R.Item_ID = %s AND R.Review_Type = %s
             """, (item_id, str(self.item_type)))
