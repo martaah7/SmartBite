@@ -387,7 +387,7 @@ class DBAppCustomer:
         # Select between Recipe or Meal Plan
         tk.Label(dialog, text="Review Type:").grid(row=0, column=0)
         type_var = tk.StringVar()
-        type_combo = ttk.Combobox(dialog, textvariable=type_var, values=["Recipe", "Meal Plan"], state="readonly")
+        type_combo = ttk.Combobox(dialog, textvariable=type_var, values=["Recipe", "MealPlan"], state="readonly")
         type_combo.grid(row=0, column=1)
 
         # Dropdown for item names
@@ -498,7 +498,7 @@ class DBAppCustomer:
             if review_type=="Recipe":
                 self.refresh_popular_items_tab(self.popular_recipes_tab, "Recipe")
             else:
-                self.refresh_popular_items_tab(self.popular_meals_tab, "Meal Plan")
+                self.refresh_popular_items_tab(self.popular_meals_tab, "MealPlan")
             self.refresh_my_reviews_tab()
 
         tk.Button(dialog, text="Submit", command=submit_review).grid(row=4, column=1, pady=10)
@@ -549,22 +549,39 @@ class DBAppCustomer:
                 new_window = tk.Toplevel(self.root)
                 new_window.title("Add item")
 
-                l = tk.Label(new_window, text="Ingredient ID: ", anchor="w").grid(row=0, column=0, padx=10, pady=5)
-                e = tk.Entry(new_window)
-                e.grid(row=0, column=1, padx=10, pady=5)
+                query = """
+                    SELECT * 
+                    FROM INGREDIENT 
+                    """
+                cursor.execute(query)
+                list_items = cursor.fetchall()
+                #print(list_items)
+                
+                tk.Label(new_window, text="Select Item to Add:").grid(row=0, column=0)
+                i_name = tk.StringVar()
+                type_combo = ttk.Combobox(new_window, textvariable=i_name, values=[ingredient[1] for ingredient in list_items], state="readonly")
+                type_combo.grid(row=0, column=1)
 
                 def submit_add():
-                    entries = [child for child in new_window.winfo_children() if isinstance(child, tk.Entry)]
-                    results = [entry.get() for entry in entries]
-                    ingredient_id = results[0]
+                    #entries = [child for child in new_window.winfo_children() if isinstance(child, tk.Entry)]
+                    #results = [entry.get() for entry in entries]
+                    ingredient_name = i_name.get() #results[0]
+                    query = """
+                        SELECT Ingredient_ID
+                        FROM INGREDIENT
+                        WHERE IName = %s 
+                        """
+                    cursor.execute(query, (ingredient_name,))
+                    i_id = cursor.fetchall()
+                    #print(i_id)
+
                     #print(results)
 
-                    cursor = self.connection.cursor()
                     query = """
                         INSERT IGNORE INTO GroceryListItems (List_ID, Ingredient_ID)
                         VALUES (%s, %s)
                         """
-                    cursor.execute(query, (list_id,ingredient_id,))
+                    cursor.execute(query, (list_id,i_id[0][0],))
                     self.connection.commit()
 
                     if cursor.rowcount > 0:
@@ -575,7 +592,7 @@ class DBAppCustomer:
                             FROM Ingredient
                             WHERE Ingredient_ID = %s;
                             """
-                        cursor.execute(query, (ingredient_id,))
+                        cursor.execute(query, (i_id[0][0],))
                         added_info = cursor.fetchall()[0]
                         #print(added_info)
 
@@ -601,7 +618,9 @@ class DBAppCustomer:
 
                         new_window.destroy()
                     else:
-                        messagebox.showinfo("No Change", "No customer was updated.") 
+                        messagebox.showinfo("No Change", "No ingredient was added.") 
+
+                    new_window.destroy()
                     
 
                 submit_add_button = tk.Button(new_window, text="Save Edits", command=submit_add)
@@ -790,8 +809,10 @@ class DBAppCustomer:
             My Items UI
             '''
             # Header
-            tk.Label(self.saved_items_tab, text="My Saved Items", font=("Arial", 32, "bold")).grid(row=0, column=0, padx=(0,25), pady=5, sticky="w")
+            tk.Label(self.saved_items_tab, text="My Created Items", font=("Arial", 32, "bold")).grid(row=0, column=0, padx=(0,25), pady=5, sticky="w")
             
+            tk.Button(self.saved_items_tab, text="Add Item  +", width=20, command=self.add_item).grid(row=0, column=1, padx=(0,25), pady=5, sticky="e")
+
 
             #list of items
             item_frame = tk.Frame(self.saved_items_tab)
@@ -827,20 +848,8 @@ class DBAppCustomer:
                 s = ["Ingredients"] + [row[1] for row in ri_result]
                 #print(s)
                 
-                w = ExpandableItem(item_frame, self.connection, row[1], ItemType.RECIPE, row[3], row[5], row[2], row[4], s, can_edit=False)
+                w = ExpandableItem(item_frame, self.connection, row[1], ItemType.RECIPE, row[3], row[5], row[2], row[4], s)
                 w.grid(row=i+1, column=1, padx=5, pady=5, sticky="w")
-                original_toggle = w.toggle_details
-                def new_toggle(orig=original_toggle, w=w, rid=row[0], name=row[1]):
-                    orig()   # call built-in expand/collapse
-                    if w.expanded:
-                        # pack the button at bottom of detail_frame
-                        tk.Button(
-                            w.detail_frame,
-                            text="Leave a Review",
-                            command=lambda: self.open_review_dialog_prefilled("Recipe", rid, name)
-                        ).pack(anchor="e", pady=5)
-                w.toggle_details = new_toggle
-                w.button.config(command=new_toggle)
 
             for i, row in enumerate(mp_rows):
                 tk.Label(item_frame, text="Meal Plan", font=("Arial", 14)).grid(row=i+1 + len(r_rows), column=0, padx=5, pady=5, sticky="w")
@@ -857,19 +866,8 @@ class DBAppCustomer:
                 s = ["Recipes"] + [row[1] for row in mr_result]
                 #print(s)
 
-                w = ExpandableItem(item_frame, self.connection, row[1], ItemType.MEALPLAN, row[4], row[3], row[2], row[5], s, can_edit=False)
+                w = ExpandableItem(item_frame, self.connection, row[1], ItemType.MEALPLAN, row[4], row[3], row[2], row[5], s)
                 w.grid(row=i+1 + len(r_rows), column=1, padx=5, pady=5, sticky="w")
-                original_toggle = w.toggle_details
-                def new_toggle(orig=original_toggle, w=w, mid=row[0], name=row[1]):
-                    orig()
-                    if w.expanded:
-                        tk.Button(
-                            w.detail_frame,
-                            text="Leave a Review",
-                            command=lambda: self.open_review_dialog_prefilled("Meal Plan", mid, name)
-                        ).pack(anchor="e", pady=5)
-                w.toggle_details = new_toggle
-                w.button.config(command=new_toggle)
 
         except Error as e:
             messagebox.showerror("Display Error", str(e))
@@ -1142,7 +1140,7 @@ class DBAppCustomer:
                 "INSERT IGNORE INTO RSavedBy (Customer_ID, ID) VALUES (%s, %s)",
                 (self.customer_id, item_id)
             )
-        else:  # Meal Plan
+        else:  # MealPlan
             cursor.execute(
                 "INSERT IGNORE INTO MSavedBy (Customer_ID, ID) VALUES (%s, %s)",
                 (self.customer_id, item_id)
