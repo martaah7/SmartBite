@@ -29,9 +29,13 @@ class LoginWindow:
             messagebox.showerror("Error", "No password provided.")
             return
         
-        auth.set_mysql_password(mysql_pw)
-
-        user = auth.get_user(uname)
+        try:
+            auth.set_mysql_password(mysql_pw)
+            user = auth.get_user(uname)
+        except mysql.connector.Error as e:
+            messagebox.showerror("Database Error", f"MySQL login failed:\n{e}")
+            return
+        
         if not user or not auth.verify_password(pw, user['Password']):
             messagebox.showerror("Login Failed", "Invalid credentials.")
             return
