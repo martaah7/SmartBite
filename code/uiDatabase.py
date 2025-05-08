@@ -359,9 +359,9 @@ class DBAppCustomer:
             cursor = self.connection.cursor()
             # Query to get reviews with recipe or meal plan names
             query = """
-                SELECT R.Review_ID, R.ReviewText, R.Rating, R.Review_Type, 
+                SELECT R.Review_ID, R.RDescription, R.Rating, R.Review_Type, 
                        C.CName, IFNULL(M.MName, Re.RName) AS ItemName
-                FROM Review AS R
+                FROM ReviewRating AS R
                 LEFT JOIN Customers AS C ON R.Customer_ID = C.Customer_ID
                 LEFT JOIN MealPlan AS M ON R.Item_ID = M.Meal_Plan_ID AND R.Review_Type = 'MealPlan'
                 LEFT JOIN Recipe AS Re ON R.Item_ID = Re.Recipe_ID AND R.Review_Type = 'Recipe'
@@ -1070,7 +1070,7 @@ class DBAppCustomer:
                        R.Cooking_Instructions, R.Nutritional_Info,
                        AVG(Rev.Rating) AS AvgRating, COUNT(Rev.Rating) AS NumReviews
                 FROM Recipe AS R
-                LEFT JOIN Review AS Rev
+                LEFT JOIN ReviewRating AS Rev
                   ON Rev.Item_ID = R.Recipe_ID AND Rev.Review_Type='Recipe'
                 GROUP BY R.Recipe_ID
                 ORDER BY NumReviews DESC, AvgRating DESC
@@ -1082,7 +1082,7 @@ class DBAppCustomer:
                        M.Duration, M.Nutritional_Info,
                        AVG(Rev.Rating) AS AvgRating, COUNT(Rev.Rating) AS NumReviews
                 FROM MealPlan AS M
-                LEFT JOIN Review AS Rev
+                LEFT JOIN ReviewRating AS Rev
                   ON Rev.Item_ID = M.Meal_Plan_ID AND Rev.Review_Type='MealPlan'
                 GROUP BY M.Meal_Plan_ID
                 ORDER BY NumReviews DESC, AvgRating DESC
@@ -1143,9 +1143,9 @@ class DBAppCustomer:
     def display_my_reviews(self):
         cursor = self.connection.cursor()
         query = """
-            SELECT R.ReviewText, R.Rating, R.Review_Type, 
+            SELECT R.RDescription, R.Rating, R.Review_Type, 
                 IFNULL(M.MName, Re.RName) AS ItemName
-            FROM Review AS R
+            FROM ReviewRating AS R
             LEFT JOIN MealPlan AS M ON R.Item_ID = M.Meal_Plan_ID AND R.Review_Type='MealPlan'
             LEFT JOIN Recipe AS Re ON R.Item_ID = Re.Recipe_ID AND R.Review_Type='Recipe'
             WHERE R.Customer_ID = %s
