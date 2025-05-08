@@ -2,6 +2,6 @@ Roles:
 - Worked with group on the project schema/diagrams
 - Created ER diagrams for earlier submissions
 - Made the createDatabase.sql file (edited by other group mates)
-- Developed tab layout for the final project
+- Developed tab layout for the final GUI
 - Developed the my items, saved items, following, and my grocery list tabs (some were edited by other groupmates to improve/fix things)
 - Developed the expandable item class and most of the functionality with it
