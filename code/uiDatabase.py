@@ -447,8 +447,8 @@ class DBAppCustomer:
 
             cursor = self.connection.cursor()
             cursor.execute(
-                "INSERT INTO Review (Customer_ID, ReviewText, Rating, Review_Type, Item_ID) VALUES (%s, %s, %s, %s, %s)",
-                (self.customer_id, review_text, rating, review_type, item_id)
+                "INSERT INTO ReviewRating (Customer_ID, Review_Type, Item_ID, Rating, RDescription) VALUES (%s, %s, %s, %s, %s)",
+                (self.customer_id, review_type, item_id, rating, review_text)
             )
             self.connection.commit()
             messagebox.showinfo("Success", "Review submitted!")
@@ -498,8 +498,8 @@ class DBAppCustomer:
 
             cursor = self.connection.cursor()
             cursor.execute(
-                "INSERT INTO Review (Customer_ID, ReviewText, Rating, Review_Type, Item_ID) VALUES (%s, %s, %s, %s, %s)",
-                (self.customer_id, review_text, rating, review_type, item_id)
+                "INSERT INTO ReviewRating (Customer_ID, Review_Type, Item_ID, Rating, RDescription) VALUES (%s, %s, %s, %s, %s)",
+                (self.customer_id, review_type, item_id, rating, review_text)
             )
             self.connection.commit()
             messagebox.showinfo("Success", "Review submitted!")
