@@ -580,8 +580,6 @@ class DBAppCustomer:
 
             tk.Button(self.grocery_tab, text="Remove Items", width=20, command=remove_list_item).grid(row=4, column=0, columnspan=2, padx=(0,25), pady=5, sticky="ew")
 
-            
-
         except Error as e:
             messagebox.showerror("Display Error", str(e))
 
@@ -795,13 +793,59 @@ class DBAppCustomer:
             following_ids = [f[1] for f in follower_rows]
             #print(following_ids)
             
+            def follow_new():
+                new_window = tk.Toplevel(self.root)
+                new_window.title("Follow")
+
+                query = """
+                    SELECT * 
+                    FROM CUSTOMERS
+                    WHERE NOT Customer_ID = %s 
+                    """
+                cursor.execute(query, (self.customer_id,))
+                customers = cursor.fetchall()
+                #print(list_items)
+                
+                tk.Label(new_window, text="Select Account to Follow:    ").grid(row=0, column=0)
+                f_name = tk.StringVar()
+                type_combo = ttk.Combobox(new_window, textvariable=f_name, values=[customer[1] for customer in customers], state="readonly")
+                type_combo.grid(row=0, column=1)
+                
+                def submit_add():
+                    new_following_name = f_name.get()
+                    query = """
+                        SELECT Customer_ID
+                        FROM CUSTOMERS
+                        WHERE CName = %s 
+                        """
+                    cursor.execute(query, (new_following_name,))
+                    f_id = cursor.fetchall()
+                    #print(f_id)
+
+                    query = """
+                        INSERT IGNORE INTO CustomerFollows (Follower_ID, Followed_ID)
+                        VALUES (%s, %s)
+                        """
+                    cursor.execute(query, (self.customer_id,f_id[0][0],))
+                    self.connection.commit()
+
+                    if cursor.rowcount > 0:
+                        messagebox.showinfo("Success", f"Followed {new_following_name} successfully.")
+                    else:
+                        messagebox.showinfo("No Change", "No account was followed.") 
+
+                    self.refresh_my_friends_tab()
+                    new_window.destroy()
+                    
+                submit_add_button = tk.Button(new_window, text="Follow", command=submit_add)
+                submit_add_button.grid(row=1, column=1, padx=10, pady=5)
+
             '''
             My Friends UI
             '''
             # Header
             tk.Label(self.friends_tab, text="My Friends", font=("Arial", 32, "bold")).grid(row=0, column=0, padx=(0,25), pady=5, sticky="w")
-            
-            #tk.Button(self.my_items_tab, text="Add Item  +", width=20, command=self.add_item).grid(row=0, column=1, padx=(0,25), pady=5, sticky="e")
+            tk.Button(self.friends_tab, text="Follow New Account  +", width=20, command=follow_new).grid(row=0, column=1, padx=(0,25), pady=5, sticky="e")
 
             #list of following
             following_frame = tk.Frame(self.friends_tab)
@@ -843,11 +887,6 @@ class DBAppCustomer:
             messagebox.showerror("Display Error", str(e))
         
         
-    '''
-    Function to add an item to list
-    TODO NEED TO IMPLEMENT, should probably make this sub function like grocery list's add
-    '''
-    # Add this method inside the DBAppCustomer class in uiDatabase.py
     def add_item(self):
         """
         Opens a dialog to create a new Recipe or Meal Plan for the current customer,
@@ -1061,10 +1100,18 @@ class DBAppCustomer:
             w.destroy()
         self.display_my_saved_items()
 
+    '''---------------------------------------
+            Refreshes pages
+    ---------------------------------------'''
     def refresh_my_reviews_tab(self):
         for widget in self.my_reviews_tab.winfo_children():
             widget.destroy()
         self.display_my_reviews()
+
+    def refresh_my_friends_tab(self):
+        for widget in self.friends_tab.winfo_children():
+            widget.destroy()
+        self.display_friends()
 
     def refresh_popular_items_tab(self, tab, item_type):
         for w in tab.winfo_children():
