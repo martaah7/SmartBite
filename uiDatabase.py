@@ -617,8 +617,8 @@ class DBAppCustomer:
         try:
             #Getting the user's items list
             cursor = self.connection.cursor()
-            r_query = "SELECT * FROM Recipe AS R WHERE R.Created_By = " + str(self.customer_id) #WHERE R.Recipe_ID <= 10"
-            mp_query = "SELECT * FROM MealPlan AS MP WHERE MP.Created_By = " + str(self.customer_id) #WHERE MP.Meal_Plan_ID <= 10"
+            r_query = "SELECT * FROM Recipe AS R WHERE R.Created_By = " + str(self.customer_id) 
+            mp_query = "SELECT * FROM MealPlan AS MP WHERE MP.Created_By = " + str(self.customer_id)
             cursor.execute(r_query)
             r_rows = cursor.fetchall()
             
@@ -679,7 +679,7 @@ class DBAppCustomer:
                     SELECT R.* 
                     FROM MealPlanRecipe AS MR 
                     JOIN Recipe AS R ON MR.Recipe_ID = R.Recipe_ID
-                    WHERE MR.Meal_Plan_ID = %s"""
+                    WHERE MR.MealPlan_ID = %s"""
                 cursor.execute(mr_query, (row[0],))
                 mr_result = cursor.fetchall()
                 
@@ -749,7 +749,7 @@ class DBAppCustomer:
             for i, row in enumerate(r_rows):
                 tk.Label(item_frame, text="Recipe", font=("Arial", 14)).grid(row=i+1, column=0, padx=5, pady=5, sticky="w")
                 #tk.Label(item_frame, text=row[1], font=("Arial", 10)).grid(row=i+1, column=1, padx=5, pady=5, sticky="w")
-                
+
                 ri_query = """
                     SELECT I.* 
                     FROM RecipeIngredient AS RI 
@@ -773,7 +773,7 @@ class DBAppCustomer:
                     SELECT R.* 
                     FROM MealPlanRecipe AS MR 
                     JOIN Recipe AS R ON MR.Recipe_ID = R.Recipe_ID
-                    WHERE MR.Meal_Plan_ID = %s"""
+                    WHERE MR.MealPlan_ID = %s"""
                 cursor.execute(mr_query, (row[0],))
                 mr_result = cursor.fetchall()
                 

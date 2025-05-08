@@ -133,7 +133,7 @@ class ExpandableItem(tk.Frame):
                                     SELECT R.* 
                                     FROM MealPlanRecipe AS MR 
                                     JOIN Recipe AS R ON MR.Recipe_ID = R.Recipe_ID
-                                    WHERE MR.Meal_Plan_ID = %s"""
+                                    WHERE MR.MealPlan_ID = %s"""
                                 cursor.execute(mr_query, (row[0],))
                                 mr_result = cursor.fetchall()
                                 
