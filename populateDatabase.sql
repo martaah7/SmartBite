@@ -220,28 +220,29 @@ VALUES
   (20, 20);
 
 -- Sample ReviewRating Table
-INSERT INTO ReviewRating (Review_ID, Customer_ID, Recipe_ID, Rating, RDescription)
+INSERT INTO ReviewRating
+  (Review_ID, Customer_ID, Review_Type, Item_ID, Rating, RDescription)
 VALUES 
-  (1, 1, 1, 5, 'Excellent and flavorful soup!'),
-  (2, 2, 2, 4, 'Great salad, but could use more dressing.'),
-  (3, 3, 3, 5, 'Delicious and moist carrot cake!'),
-  (4, 4, 4, 4, 'Tasty stir fry with a hint of garlic.'),
-  (5, 5, 5, 5, 'Perfectly grilled chicken, very satisfying.'),
-  (6, 6, 6, 4, 'Quinoa bowl was filling and nutritious.'),
-  (7, 7, 7, 5, 'Baked salmon was fresh and well-cooked.'),
-  (8, 8, 8, 4, 'Avocado toast was simple but delightful.'),
-  (9, 9, 9, 4, 'Pepper stir fry had a nice crunch.'),
-  (10, 10, 10, 5, 'Cucumber salad was refreshing.'),
-  (11, 11, 11, 5, 'Egg omelette was fluffy and tasty.'),
-  (12, 12, 12, 4, 'Lettuce wraps were light and healthy.'),
-  (13, 13, 13, 5, 'Beef stew was hearty and flavorful.'),
-  (14, 14, 14, 4, 'Mushroom risotto was creamy and rich.'),
-  (15, 15, 15, 5, 'Yogurt parfait was a perfect dessert.'),
-  (16, 16, 16, 4, 'Blueberry muffins were moist and sweet.'),
-  (17, 17, 17, 5, 'Oats porridge warmed me up on a cold day.'),
-  (18, 18, 18, 4, 'Almond smoothie was creamy and energizing.'),
-  (19, 19, 19, 5, 'Banana bread was perfectly baked.'),
-  (20, 20, 20, 4, 'Strawberry shortcake was delightfully sweet.');
+  ( 1,  1, 'Recipe', 1, 5, 'Excellent and flavorful soup!'                ),
+  ( 2,  2, 'Recipe', 2, 4, 'Great salad, but could use more dressing.'     ),
+  ( 3,  3, 'Recipe', 3, 5, 'Delicious and moist carrot cake!'               ),
+  ( 4,  4, 'Recipe', 4, 4, 'Tasty stir fry with a hint of garlic.'          ),
+  ( 5,  5, 'Recipe', 5, 5, 'Perfectly grilled chicken, very satisfying.'   ),
+  ( 6,  6, 'Recipe', 6, 4, 'Quinoa bowl was filling and nutritious.'        ),
+  ( 7,  7, 'Recipe', 7, 5, 'Baked salmon was fresh and well-cooked.'        ),
+  ( 8,  8, 'Recipe', 8, 4, 'Avocado toast was simple but delightful.'       ),
+  ( 9,  9, 'Recipe', 9, 4, 'Pepper stir fry had a nice crunch.'             ),
+  (10, 10, 'Recipe', 10, 5, 'Cucumber salad was refreshing.'                ),
+  (11, 11, 'Recipe', 11, 5, 'Egg omelette was fluffy and tasty.'             ),
+  (12, 12, 'Recipe', 12, 4, 'Lettuce wraps were light and healthy.'          ),
+  (13, 13, 'Recipe', 13, 5, 'Beef stew was hearty and flavorful.'            ),
+  (14, 14, 'Recipe', 14, 4, 'Mushroom risotto was creamy and rich.'          ),
+  (15, 15, 'Recipe', 15, 5, 'Yogurt parfait was a perfect dessert.'          ),
+  (16, 16, 'Recipe', 16, 4, 'Blueberry muffins were moist and sweet.'        ),
+  (17, 17, 'Recipe', 17, 5, 'Oats porridge warmed me up on a cold day.'      ),
+  (18, 18, 'Recipe', 18, 4, 'Almond smoothie was creamy and energizing.'    ),
+  (19, 19, 'Recipe', 19, 5, 'Banana bread was perfectly baked.'               ),
+  (20, 20, 'Recipe', 20, 4, 'Strawberry shortcake was delightfully sweet.'   );
 
 -- Sample Restocks Table
 INSERT INTO Restocks (Store_ID, Ingredient_ID)

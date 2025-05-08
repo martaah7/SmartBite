@@ -96,7 +96,8 @@ CREATE TABLE MealPlanRecipe (
 CREATE TABLE ReviewRating (
     Review_ID INT PRIMARY KEY,
     Customer_ID INT NOT NULL,
-    Recipe_ID INT NOT NULL,
+    Review_Type  VARCHAR(10) NOT NULL,
+    Item_ID INT NOT NULL,
     Rating INT CHECK (Rating BETWEEN 1 AND 5),
     RDescription VARCHAR(511),
     FOREIGN KEY (Customer_ID) REFERENCES Customers(Customer_ID),

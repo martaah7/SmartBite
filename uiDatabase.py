@@ -387,7 +387,7 @@ class DBAppCustomer:
         # Select between Recipe or Meal Plan
         tk.Label(dialog, text="Review Type:").grid(row=0, column=0)
         type_var = tk.StringVar()
-        type_combo = ttk.Combobox(dialog, textvariable=type_var, values=["Recipe", "MealPlan"], state="readonly")
+        type_combo = ttk.Combobox(dialog, textvariable=type_var, values=["Recipe", "Meal Plan"], state="readonly")
         type_combo.grid(row=0, column=1)
 
         # Dropdown for item names
@@ -498,7 +498,7 @@ class DBAppCustomer:
             if review_type=="Recipe":
                 self.refresh_popular_items_tab(self.popular_recipes_tab, "Recipe")
             else:
-                self.refresh_popular_items_tab(self.popular_meals_tab, "MealPlan")
+                self.refresh_popular_items_tab(self.popular_meals_tab, "Meal Plan")
             self.refresh_my_reviews_tab()
 
         tk.Button(dialog, text="Submit", command=submit_review).grid(row=4, column=1, pady=10)
@@ -790,10 +790,8 @@ class DBAppCustomer:
             My Items UI
             '''
             # Header
-            tk.Label(self.saved_items_tab, text="My Created Items", font=("Arial", 32, "bold")).grid(row=0, column=0, padx=(0,25), pady=5, sticky="w")
+            tk.Label(self.saved_items_tab, text="My Saved Items", font=("Arial", 32, "bold")).grid(row=0, column=0, padx=(0,25), pady=5, sticky="w")
             
-            tk.Button(self.saved_items_tab, text="Add Item  +", width=20, command=self.add_item).grid(row=0, column=1, padx=(0,25), pady=5, sticky="e")
-
 
             #list of items
             item_frame = tk.Frame(self.saved_items_tab)
@@ -829,8 +827,20 @@ class DBAppCustomer:
                 s = ["Ingredients"] + [row[1] for row in ri_result]
                 #print(s)
                 
-                w = ExpandableItem(item_frame, self.connection, row[1], ItemType.RECIPE, row[3], row[5], row[2], row[4], s)
+                w = ExpandableItem(item_frame, self.connection, row[1], ItemType.RECIPE, row[3], row[5], row[2], row[4], s, can_edit=False)
                 w.grid(row=i+1, column=1, padx=5, pady=5, sticky="w")
+                original_toggle = w.toggle_details
+                def new_toggle(orig=original_toggle, w=w, rid=row[0], name=row[1]):
+                    orig()   # call built-in expand/collapse
+                    if w.expanded:
+                        # pack the button at bottom of detail_frame
+                        tk.Button(
+                            w.detail_frame,
+                            text="Leave a Review",
+                            command=lambda: self.open_review_dialog_prefilled("Recipe", rid, name)
+                        ).pack(anchor="e", pady=5)
+                w.toggle_details = new_toggle
+                w.button.config(command=new_toggle)
 
             for i, row in enumerate(mp_rows):
                 tk.Label(item_frame, text="Meal Plan", font=("Arial", 14)).grid(row=i+1 + len(r_rows), column=0, padx=5, pady=5, sticky="w")
@@ -847,8 +857,19 @@ class DBAppCustomer:
                 s = ["Recipes"] + [row[1] for row in mr_result]
                 #print(s)
 
-                w = ExpandableItem(item_frame, self.connection, row[1], ItemType.MEALPLAN, row[4], row[3], row[2], row[5], s)
+                w = ExpandableItem(item_frame, self.connection, row[1], ItemType.MEALPLAN, row[4], row[3], row[2], row[5], s, can_edit=False)
                 w.grid(row=i+1 + len(r_rows), column=1, padx=5, pady=5, sticky="w")
+                original_toggle = w.toggle_details
+                def new_toggle(orig=original_toggle, w=w, mid=row[0], name=row[1]):
+                    orig()
+                    if w.expanded:
+                        tk.Button(
+                            w.detail_frame,
+                            text="Leave a Review",
+                            command=lambda: self.open_review_dialog_prefilled("Meal Plan", mid, name)
+                        ).pack(anchor="e", pady=5)
+                w.toggle_details = new_toggle
+                w.button.config(command=new_toggle)
 
         except Error as e:
             messagebox.showerror("Display Error", str(e))
@@ -1121,7 +1142,7 @@ class DBAppCustomer:
                 "INSERT IGNORE INTO RSavedBy (Customer_ID, ID) VALUES (%s, %s)",
                 (self.customer_id, item_id)
             )
-        else:  # MealPlan
+        else:  # Meal Plan
             cursor.execute(
                 "INSERT IGNORE INTO MSavedBy (Customer_ID, ID) VALUES (%s, %s)",
                 (self.customer_id, item_id)
