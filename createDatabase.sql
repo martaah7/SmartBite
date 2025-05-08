@@ -146,3 +146,13 @@ CREATE TABLE CustomerFollows(
     FOREIGN KEY (Follower_ID) REFERENCES Customers(Customer_ID),
     FOREIGN KEY (Followed_ID) REFERENCES Customers(Customer_ID)
 );
+
+CREATE TABLE Users (
+    User_ID       INT AUTO_INCREMENT PRIMARY KEY,
+    Username      VARCHAR(50)     NOT NULL UNIQUE,
+    Password      VARCHAR(255)    NOT NULL,
+    Role          ENUM('admin','employee','customer') NOT NULL,
+    Created_By    INT             NULL,
+    Created_At    TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (Created_By) REFERENCES Users(User_ID)
+);

@@ -273,3 +273,12 @@ VALUES (1, 1), (1, 2), (1, 3), (1, 4);
 
 INSERT INTO CustomerFollows(Follower_ID, Followed_ID)
 VALUES (1, 2), (2, 1), (1, 10), (1, 5), (5, 1);
+
+-- Pre-loaded Users (plaintext passwords)
+INSERT INTO Users (Username, Password, Role, Created_By)
+VALUES
+  ('admin',     'AdminPass123!',  'admin',    NULL),
+  ('employee1', 'EmpPass123!',    'employee', 1),
+  ('customer1', 'CustPass1!',     'customer', 1),
+  ('customer2', 'CustPass2!',     'customer', 1);
+

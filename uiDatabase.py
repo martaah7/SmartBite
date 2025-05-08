@@ -3,6 +3,7 @@ from mysql.connector import Error
 import tkinter as tk
 from tkinter import messagebox, scrolledtext
 from tkinter import ttk
+import auth
 
 from customUIElements import ScrollableFrame, ExpandableItem, ItemType
 
@@ -831,4 +832,100 @@ class DBAppCustomer:
 
         tk.Button(new_window, text="Add", command=submit).grid(row=2, column=1, pady=10)
 
+class DBAppAdmin:
+    def __init__(self, root, connection, user):
+        self.root = root
+        self.conn = connection
+        self.user_id = user['User_ID']
 
+        # Header
+        header = tk.Label(root, text="Admin Dashboard", bg="#003366", fg="white", font=("Arial", 24, "bold"))
+        header.pack(fill="x", pady=(0,10))
+
+        # Tabs
+        tab_control = ttk.Notebook(root)
+        tab_control.pack(expand=1, fill="both")
+
+        self.user_tab = tk.Frame(tab_control)
+        tab_control.add(self.user_tab, text="User Management")
+
+        self.report_tab = tk.Frame(tab_control)
+        tab_control.add(self.report_tab, text="Reports")
+
+        # Populate tabs
+        self._build_user_tab()
+        self._build_report_tab()
+
+    def _build_user_tab(self):
+        # Treeview of existing users
+        cols = ("Username","Role","Created_By","Created_At")
+        self.tree = ttk.Treeview(self.user_tab, columns=cols, show="headings")
+        for c in cols:
+            self.tree.heading(c, text=c)
+            self.tree.column(c, width=120, anchor="center")
+        self.tree.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Load users
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT Username, Role, Created_By, Created_At FROM Users ORDER BY Created_At DESC")
+        for u,r,cb,ca in cursor.fetchall():
+            self.tree.insert("","end", values=(u,r,cb or '', ca))
+
+        # Form to add new user
+        form = ttk.LabelFrame(self.user_tab, text="Create New User")
+        form.pack(fill="x", padx=10, pady=(0,10))
+        tk.Label(form, text="Username:").grid(row=0, column=0, padx=5, pady=5, sticky="e")
+        self.new_username = tk.Entry(form)
+        self.new_username.grid(row=0, column=1, padx=5, pady=5)
+        tk.Label(form, text="Password:").grid(row=1, column=0, padx=5, pady=5, sticky="e")
+        self.new_password = tk.Entry(form, show="*")
+        self.new_password.grid(row=1, column=1, padx=5, pady=5)
+        tk.Label(form, text="Role:").grid(row=2, column=0, padx=5, pady=5, sticky="e")
+        self.new_role = ttk.Combobox(form, values=["admin","employee","customer"], state="readonly")
+        self.new_role.current(2)
+        self.new_role.grid(row=2, column=1, padx=5, pady=5)
+
+        btn = tk.Button(form, text="Create User", command=self._create_user)
+        btn.grid(row=3, column=0, columnspan=2, pady=10)
+
+    def _create_user(self):
+        uname = self.new_username.get().strip()
+        pw    = self.new_password.get()
+        role  = self.new_role.get()
+        if not uname or not pw or not role:
+            messagebox.showwarning("Input Error","All fields are required.")
+            return
+        try:
+            auth.create_user(uname, pw, role, created_by=self.user_id)
+            messagebox.showinfo("Success", f"User '{uname}' created as {role}.")
+            # Refresh treeview
+            for row in self.tree.get_children():
+                self.tree.delete(row)
+            cursor = self.conn.cursor()
+            cursor.execute("SELECT Username, Role, Created_By, Created_At FROM Users ORDER BY Created_At DESC")
+            for u,r,cb,ca in cursor.fetchall():
+                self.tree.insert("","end", values=(u,r,cb or '', ca))
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    def _build_report_tab(self):
+        # Simple stats
+        stats_frame = tk.Frame(self.report_tab)
+        stats_frame.pack(fill="x", padx=10, pady=10)
+        cursor = self.conn.cursor()
+        stats = []
+        queries = [
+            ("Total Customers", "SELECT COUNT(*) FROM Customers"),
+            ("Total Recipes",   "SELECT COUNT(*) FROM Recipe"),
+            ("Total Meal Plans","SELECT COUNT(*) FROM MealPlan"),
+            ("Total Users",     "SELECT COUNT(*) FROM Users")
+        ]
+        for i, (label, q) in enumerate(queries):
+            cursor.execute(q)
+            count = cursor.fetchone()[0]
+            tk.Label(stats_frame, text=f"{label}: {count}", font=("Arial",14)).grid(row=i, column=0, sticky="w", pady=2)
+
+        # Detailed report area
+        detail_frame = ttk.LabelFrame(self.report_tab, text="Detailed Reports")
+        detail_frame.pack(fill="both", expand=True, padx=10, pady=(0,10))
+        tk.Label(detail_frame, text="(Add graphs or tables here)", font=("Arial",12,"italic")).pack(pady=20)
