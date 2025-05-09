@@ -275,10 +275,10 @@ VALUES (1, 1), (1, 2), (1, 3), (1, 4);
 INSERT INTO CustomerFollows(Follower_ID, Followed_ID)
 VALUES (1, 2), (2, 1), (1, 10), (1, 5), (5, 1);
 
--- Pre-loaded Users (plaintext passwords)
+-- Pre-loaded Users. Passwords in their respective order: AdminPass123!, EmpPass123!, CustPass1!, CustPass2!
 INSERT INTO Users (Username, Password, Role, Created_By)
 VALUES
-  ('admin',     'AdminPass123!',  'admin',    NULL),
-  ('employee1', 'EmpPass123!',    'employee', 1),
-  ('customer1', 'CustPass1!',     'customer', 1),
-  ('customer2', 'CustPass2!',     'customer', 1);
+  ('admin',     '$2b$12$LXkyJKO/7mHZI9nBvFyTgOUN6svkA3vLRdeQlJl/DZGFnn3mrnCR.',  'admin',    NULL),
+  ('employee1', '$2b$12$3623VPdvZJNEjb6K232xeeuevaY1K0IpGOfD6Nl0UDPyXdqWRx13K',    'employee', 1),
+  ('customer1', '$2b$12$Mk8K8fu22B93yK6TcHfGY.VH8C5kYydZbeyhmTKMZvFO.ZodYF/gC',     'customer', 1),
+  ('customer2', '$2b$12$aHjL6GZmwDGU0VuYwJ6NDelfLhXhE1/xtu4K2IgEq8ZQ89mROu/hS',     'customer', 1);
