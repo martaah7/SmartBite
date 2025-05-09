@@ -41,6 +41,13 @@ RUNNING THE APP
 - Once you've signed up, use your log in credentials, you will still be prompted for your SQL password
 - Navigate via the tabs (Recipes, Meal Plans, My Items, Save Items, My Grocery List, My Pantry, Popular Recipes, Popular Meal Plans, My Reviews) and click labels to see full details.
 
+ADMIN
+- Dashboard is only accessible to admin users after login 
+- Can view all users (Username, Role, Created_By, Created_At)  
+- Can create new users (Username, Password, Role)
+- Gives key stats: total Customers, Recipes, Meal Plans, Users  
+- Also give Recipe and Meal Plan data as a rating distribution chart; top-rated & most-saved recipe
+
 NOTES
 - No hard-coded credentials—DB passwords are entered at runtime.
 - Keep the sql/ folder intact so the app can locate your schema and seed data.
