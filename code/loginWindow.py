@@ -2,7 +2,7 @@ import mysql.connector
 from mysql.connector import Error
 import tkinter as tk
 from tkinter import messagebox, scrolledtext
-from tkinter import ttk
+from tkinter import ttk, simpledialog
 
 from customUIElements import ScrollableFrame
 from uiDatabase import DBApp, DBAppCustomer, DBAppAdmin
@@ -22,23 +22,37 @@ class LoginWindow:
 
     def try_login(self):
         uname = self.username_entry.get().strip()
-        pw    = self.password_entry.get()
-        user = auth.get_user(uname)
+        pw = self.password_entry.get()
+
+        mysql_pw = simpledialog.askstring("MySQL password", "Enter your MySQL password:", show="*")
+        if not mysql_pw:
+            messagebox.showerror("Error", "No password provided.")
+            return
+        
+        try:
+            auth.set_mysql_password(mysql_pw)
+            user = auth.get_user(uname)
+        except mysql.connector.Error as e:
+            messagebox.showerror("Database Error", f"MySQL login failed:\n{e}")
+            return
+        
         if not user or not auth.verify_password(pw, user['Password']):
             messagebox.showerror("Login Failed", "Invalid credentials.")
             return
-
-        # Success → launch appropriate UI
+        
         self.root.destroy()
         main = tk.Tk()
         role = user['Role']
+        conn = auth.get_connection()
+
         if role == 'admin':
-            app = DBAppAdmin(main, auth.get_connection(), user)
+            app = DBAppAdmin(main, conn, user)
         elif role == 'employee':
-            app = DBApp(main, auth.get_connection())
-        else:  # customer
-            app = DBAppCustomer(main, auth.get_connection())
+            app = DBApp(main, conn)
+        else:
+            app = DBAppCustomer(main, conn, user)
         main.mainloop()
+
 
     def sign_up(self):
         """Allow any new customer to self-register."""
@@ -57,9 +71,18 @@ class LoginWindow:
             if not u or not p or p != p2:
                 messagebox.showwarning("Error", "Must match and non-empty.")
                 return
+            
+            mysql_pw = simpledialog.askstring("MySQL Password", "Enter your MySQL password:", show="*")
+            if not mysql_pw:
+                messagebox.showerror("Error", "No MySQL password provided.")
+                return
+            
+            auth.set_mysql_password(mysql_pw)
+
             if auth.get_user(u):
                 messagebox.showwarning("Error", "Username taken.")
                 return
+
             auth.create_user(u, p, role='customer', created_by=None)
             messagebox.showinfo("Success", "Account created—you can now log in.")
             win.destroy()

@@ -277,10 +277,11 @@ class DBApp:
         ])
 
 class DBAppCustomer:
-    def __init__(self, root, connection):
+    def __init__(self, root, connection, user):
         self.root = root
         self.connection = connection
         self.customer_id = 1
+        self.user = user
 
         # Header label with green background
         header = tk.Label(root, text="SmartBite", bg="green", fg="white", font=("Arial", 24, "bold"))
@@ -291,6 +292,10 @@ class DBAppCustomer:
         self.label.pack(pady=10)
 
         tk.Button(root, text="Close Connection", command=self.close_connection).pack(pady=2)
+
+        tk.Button(root, text="Logout", command=self.logout).pack(pady=2)
+
+        tk.Button(root, text="Change Password", command=self.change_password_popup).pack(pady=2)
 
          # Tabbed interface
         tab_control = ttk.Notebook(root)
@@ -1285,6 +1290,41 @@ class DBAppCustomer:
             w.destroy()
         self.display_popular_items(tab, item_type)
 
+    def logout(self):
+        import tkinter.messagebox as messagebox
+        if not messagebox.askyesno("Confirm Logout", "Are you sure you want to log out?"):
+            return
+        
+        self.root.destroy()
+
+        import loginWindow
+        loginWindow.LoginWindow()
+
+    def change_password_popup(self):
+        popup = tk.Toplevel(self.root)
+        popup.title("Change Password")
+
+        tk.Label(popup, text="Old Password").pack()
+        old_entry = tk.Entry(popup, show="*")
+        old_entry.pack()
+
+        tk.Label(popup, text="New Password").pack()
+        new_entry = tk.Entry(popup, show="*")
+        new_entry.pack()
+
+        def confirm():
+            import auth
+            old_pw = old_entry.get()
+            new_pw = new_entry.get()
+
+            if not auth.change_password(self.user['Username'], old_pw, new_pw):
+                messagebox.showerror("Error", "Incorrect old password or update failed.")
+            else:
+                messagebox.showinfo("Success", "password updated.")
+                popup.destroy()
+
+        tk.Button(popup, text="Confirm", command=confirm).pack(pady=5)
+
 
 
 
@@ -1292,11 +1332,16 @@ class DBAppAdmin:
     def __init__(self, root, connection, user):
         self.root = root
         self.conn = connection
+        self.user = user
         self.user_id = user['User_ID']
 
         # Header
         header = tk.Label(root, text="Admin Dashboard", bg="#003366", fg="white", font=("Arial", 24, "bold"))
         header.pack(fill="x", pady=(0,10))
+
+        tk.Button(root, text="Logout", command=self.logout).pack(pady=(0, 5))
+        tk.Button(root, text="Change Password", command=self.change_password_popup).pack(pady=2)
+
 
         # Tabs
         tab_control = ttk.Notebook(root)
@@ -1521,4 +1566,41 @@ class DBAppAdmin:
         sa_review_recipe_name = cursor.fetchall()
 
         tk.Label(self.meal_plan_report_tab, text=f"{sa_review_recipe_name[0][0]} is the meal plan with the most saves, with {save_counts[max_key]} saves.", font=("Arial", 10)).pack(fill="x", pady=2)
+
+    def logout(self):
+        import tkinter.messagebox as messagebox
+        if not messagebox.askyesno("Confirm Logout", "Are you sure you want to logout?"):
+            return
+        
+        self.root.destroy()
+
+        import loginWindow
+        loginWindow.LoginWindow()
+
+    def change_password_popup(self):
+        popup = tk.Toplevel(self.root)
+        popup.title("Change Password")
+
+        tk.Label(popup, text="Old Password").pack()
+        old_entry = tk.Entry(popup, show="*")
+        old_entry.pack()
+
+        tk.Label(popup, text="New Password").pack()
+        new_entry = tk.Entry(popup, show="*")
+        new_entry.pack()
+
+        def confirm():
+            import auth
+            old_pw = old_entry.get()
+            new_pw = new_entry.get()
+
+            if not auth.change_password(self.user['Username'], old_pw, new_pw):
+                messagebox.showerror("Error", "Incorrect old password or update failed.")
+            else:
+                messagebox.showinfo("Success", "password updated.")
+                popup.destroy()
+
+        tk.Button(popup, text="Confirm", command=confirm).pack(pady=5)
+
+    
 
