@@ -282,3 +282,10 @@ VALUES
   ('employee1', '$2b$12$3623VPdvZJNEjb6K232xeeuevaY1K0IpGOfD6Nl0UDPyXdqWRx13K',    'employee', 1),
   ('customer1', '$2b$12$Mk8K8fu22B93yK6TcHfGY.VH8C5kYydZbeyhmTKMZvFO.ZodYF/gC',     'customer', 1),
   ('customer2', '$2b$12$aHjL6GZmwDGU0VuYwJ6NDelfLhXhE1/xtu4K2IgEq8ZQ89mROu/hS',     'customer', 1);
+
+
+INSERT INTO RSavedBy (Customer_ID, ID) 
+VALUES (1, 10), (1, 11), (2, 10), (3, 14);
+
+INSERT INTO MSavedBy (Customer_ID, ID) 
+VALUES (1, 10), (1, 11), (2, 10), (3, 14);
