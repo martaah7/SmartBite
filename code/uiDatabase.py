@@ -320,17 +320,22 @@ class DBAppCustomer:
         tab_control.add(self.grocery_tab, text="My Grocery List")
         self.display_grocery_list()
 
-        # Tab 5
+        # Pantry tab
+        self.pantry_tab = tk.Frame(tab_control)
+        tab_control.add(self.pantry_tab, text="My Pantry")
+        self.display_pantry()
+
+        # Popular recipes
         self.popular_recipes_tab = tk.Frame(tab_control)
         tab_control.add(self.popular_recipes_tab, text="Popular Recipes")
         self.display_popular_items(self.popular_recipes_tab, "Recipe")
 
-        # Tab 6
+        # popular meal plans
         self.popular_meals_tab = tk.Frame(tab_control)
         tab_control.add(self.popular_meals_tab, text="Popular Meal Plans")
         self.display_popular_items(self.popular_meals_tab, "Meal Plan")
 
-        # Tab 7
+        # my reviews
         self.my_reviews_tab = tk.Frame(tab_control)
         tab_control.add(self.my_reviews_tab, text="My Reviews")
         self.display_my_reviews()
@@ -585,8 +590,6 @@ class DBAppCustomer:
 
             tk.Button(self.grocery_tab, text="Remove Items", width=20, command=remove_list_item).grid(row=4, column=0, columnspan=2, padx=(0,25), pady=5, sticky="ew")
 
-            
-
         except Error as e:
             messagebox.showerror("Display Error", str(e))
 
@@ -675,7 +678,169 @@ class DBAppCustomer:
         '''
     Displays all of the information under the My Items tab
     '''
-    
+        
+    def display_pantry(self):
+        cursor = self.connection.cursor()
+        cursor.execute("""
+            SELECT I.Ingredient_ID, I.IName
+            FROM PantryItems P
+            JOIN Ingredient   I ON P.Ingredient_ID = I.Ingredient_ID
+            WHERE P.Customer_ID = %s
+        """, (self.customer_id,))
+        pantry_rows = cursor.fetchall()
+
+        # clear tab
+        for w in self.pantry_tab.winfo_children(): w.destroy()
+
+        tk.Label(self.pantry_tab, text="My Pantry", font=("Arial", 24, "bold"))\
+            .grid(row=0, column=0, sticky="w", padx=10, pady=5)
+
+        ingredient_frame = tk.Frame(self.pantry_tab)
+        ingredient_frame.grid(row=1, column=0, padx=10, pady=5, sticky="nsew")
+        ingredient_frame.grid_columnconfigure(0, weight=1)
+
+        # headers
+        tk.Label(ingredient_frame, text="Ingredient", font=("Arial",12,"bold"))\
+            .grid(row=0, column=0, sticky="w")
+
+        self.pantry_vars = []
+        for i, (iid, name) in enumerate(pantry_rows, start=1):
+            tk.Label(ingredient_frame, text=name).grid(row=i, column=0, sticky="w")
+            var = tk.BooleanVar()
+            tk.Checkbutton(ingredient_frame, variable=var)\
+                .grid(row=i, column=1, sticky="e")
+            self.pantry_vars.append((var, iid))
+
+        # add & delete buttons
+        btn_frame = tk.Frame(self.pantry_tab)
+        btn_frame.grid(row=2, column=0, pady=10, sticky="e")
+        tk.Button(btn_frame, text="Add to Pantry +", command=self.add_item_to_pantry)\
+            .pack(side="left", padx=5)
+        tk.Button(btn_frame, text="Remove Selected", command=self.remove_pantry_items)\
+            .pack(side="left", padx=5)
+
+    def add_item_to_pantry(self):
+        dlg = tk.Toplevel(self.root)
+        dlg.title("Add Ingredient to Pantry")
+
+        cursor = self.connection.cursor()
+        # fetch existing names
+        cursor.execute("SELECT IName FROM Ingredient")
+        all_names = [r[0] for r in cursor.fetchall()]
+
+        # choice combobox
+        tk.Label(dlg, text="Choose or create:").grid(row=0, column=0, sticky="w")
+        name_var = tk.StringVar()
+        combo = ttk.Combobox(
+            dlg, textvariable=name_var,
+            values=all_names + ["<Create new>"],
+            state="readonly",
+            width=30
+        )
+        combo.grid(row=0, column=1, padx=5, pady=5)
+        combo.current(0)
+
+        # prepare "create new" fields (but don't grid them yet)
+        new_name_label = tk.Label(dlg, text="Name:")
+        new_name_entry = tk.Entry(dlg, width=30)
+
+        nutri_label = tk.Label(dlg, text="Nutritional Info:")
+        nutri_entry = tk.Entry(dlg, width=30)
+
+        subs_label = tk.Label(dlg, text="Substitutes:")
+        subs_entry = tk.Entry(dlg, width=30)
+
+        price_label = tk.Label(dlg, text="Price Range:")
+        price_entry = tk.Entry(dlg, width=30)
+
+        # when user selects "<Create new>", show those fields
+        def on_choice(evt):
+            if name_var.get() == "<Create new>":
+                new_name_label.grid(row=1, column=0, sticky="w", padx=5)
+                new_name_entry.grid(row=1, column=1, padx=5, pady=2)
+                nutri_label.grid(row=2, column=0, sticky="w", padx=5)
+                nutri_entry.grid(row=2, column=1, padx=5, pady=2)
+                subs_label.grid(row=3, column=0, sticky="w", padx=5)
+                subs_entry.grid(row=3, column=1, padx=5, pady=2)
+                price_label.grid(row=4, column=0, sticky="w", padx=5)
+                price_entry.grid(row=4, column=1, padx=5, pady=2)
+            else:
+                # hide them
+                for w in (new_name_label, new_name_entry,
+                        nutri_label, nutri_entry,
+                        subs_label, subs_entry,
+                        price_label, price_entry):
+                    w.grid_forget()
+
+        combo.bind("<<ComboboxSelected>>", on_choice)
+
+        def submit():
+            chosen = name_var.get()
+            # CREATE NEW
+            if chosen == "<Create new>":
+                chosen = new_name_entry.get().strip()
+                if not chosen:
+                    messagebox.showwarning("Input Error", "Please enter a name.")
+                    return
+                nutri = nutri_entry.get().strip() or None
+                subs  = subs_entry.get().strip() or None
+                price = price_entry.get().strip()
+                if not price:
+                    messagebox.showwarning("Input Error", "Price Range is required.")
+                    return
+
+                # generate new Ingredient_ID
+                cursor.execute("SELECT IFNULL(MAX(Ingredient_ID),0)+1 FROM Ingredient")
+                new_id = cursor.fetchone()[0]
+
+                cursor.execute("""
+                    INSERT INTO Ingredient
+                    (Ingredient_ID, IName, Nutritional_Info, Substitutes, Price_Range)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (new_id, chosen, nutri, subs, price))
+                self.connection.commit()
+                iid = new_id
+
+            # EXISTING
+            else:
+                cursor.execute(
+                    "SELECT Ingredient_ID FROM Ingredient WHERE IName=%s",
+                    (chosen,)
+                )
+                iid = cursor.fetchone()[0]
+
+            # link into PantryItems
+            cursor.execute("""
+                INSERT IGNORE INTO PantryItems (Customer_ID, Ingredient_ID)
+                VALUES (%s, %s)
+            """, (self.customer_id, iid))
+            self.connection.commit()
+
+            messagebox.showinfo("Success", "Pantry updated.")
+            dlg.destroy()
+            self.display_pantry()
+
+        tk.Button(dlg, text="Save", command=submit)\
+            .grid(row=99, column=1, pady=10, sticky="e")
+
+
+    def remove_pantry_items(self):
+        cursor = self.connection.cursor()
+        removed = False
+        for var, iid in self.pantry_vars:
+            if var.get():
+                cursor.execute("""
+                    DELETE FROM PantryItems
+                    WHERE Customer_ID=%s AND Ingredient_ID=%s
+                """, (self.customer_id, iid))
+                removed = True
+        self.connection.commit()
+        if removed:
+            messagebox.showinfo("Success","Removed from pantry.")
+        else:
+            messagebox.showinfo("No Selection","Nothing to remove.")
+        self.display_pantry()
+
     '''
     Displays all the information under the saved items tab
     '''
@@ -800,13 +965,59 @@ class DBAppCustomer:
             following_ids = [f[1] for f in follower_rows]
             #print(following_ids)
             
+            def follow_new():
+                new_window = tk.Toplevel(self.root)
+                new_window.title("Follow")
+
+                query = """
+                    SELECT * 
+                    FROM CUSTOMERS
+                    WHERE NOT Customer_ID = %s 
+                    """
+                cursor.execute(query, (self.customer_id,))
+                customers = cursor.fetchall()
+                #print(list_items)
+                
+                tk.Label(new_window, text="Select Account to Follow:    ").grid(row=0, column=0)
+                f_name = tk.StringVar()
+                type_combo = ttk.Combobox(new_window, textvariable=f_name, values=[customer[1] for customer in customers], state="readonly")
+                type_combo.grid(row=0, column=1)
+                
+                def submit_add():
+                    new_following_name = f_name.get()
+                    query = """
+                        SELECT Customer_ID
+                        FROM CUSTOMERS
+                        WHERE CName = %s 
+                        """
+                    cursor.execute(query, (new_following_name,))
+                    f_id = cursor.fetchall()
+                    #print(f_id)
+
+                    query = """
+                        INSERT IGNORE INTO CustomerFollows (Follower_ID, Followed_ID)
+                        VALUES (%s, %s)
+                        """
+                    cursor.execute(query, (self.customer_id,f_id[0][0],))
+                    self.connection.commit()
+
+                    if cursor.rowcount > 0:
+                        messagebox.showinfo("Success", f"Followed {new_following_name} successfully.")
+                    else:
+                        messagebox.showinfo("No Change", "No account was followed.") 
+
+                    self.refresh_my_friends_tab()
+                    new_window.destroy()
+                    
+                submit_add_button = tk.Button(new_window, text="Follow", command=submit_add)
+                submit_add_button.grid(row=1, column=1, padx=10, pady=5)
+
             '''
             My Friends UI
             '''
             # Header
             tk.Label(self.friends_tab, text="My Friends", font=("Arial", 32, "bold")).grid(row=0, column=0, padx=(0,25), pady=5, sticky="w")
-            
-            #tk.Button(self.my_items_tab, text="Add Item  +", width=20, command=self.add_item).grid(row=0, column=1, padx=(0,25), pady=5, sticky="e")
+            tk.Button(self.friends_tab, text="Follow New Account  +", width=20, command=follow_new).grid(row=0, column=1, padx=(0,25), pady=5, sticky="e")
 
             #list of following
             following_frame = tk.Frame(self.friends_tab)
@@ -848,11 +1059,6 @@ class DBAppCustomer:
             messagebox.showerror("Display Error", str(e))
         
         
-    '''
-    Function to add an item to list
-    TODO NEED TO IMPLEMENT, should probably make this sub function like grocery list's add
-    '''
-    # Add this method inside the DBAppCustomer class in uiDatabase.py
     def add_item(self):
         """
         Opens a dialog to create a new Recipe or Meal Plan for the current customer,
@@ -1066,10 +1272,18 @@ class DBAppCustomer:
             w.destroy()
         self.display_my_saved_items()
 
+    '''---------------------------------------
+            Refreshes pages
+    ---------------------------------------'''
     def refresh_my_reviews_tab(self):
         for widget in self.my_reviews_tab.winfo_children():
             widget.destroy()
         self.display_my_reviews()
+
+    def refresh_my_friends_tab(self):
+        for widget in self.friends_tab.winfo_children():
+            widget.destroy()
+        self.display_friends()
 
     def refresh_popular_items_tab(self, tab, item_type):
         for w in tab.winfo_children():

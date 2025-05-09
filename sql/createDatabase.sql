@@ -44,6 +44,14 @@ CREATE TABLE Ingredient (
     Price_Range VARCHAR(255) NOT NULL
 );
 
+CREATE TABLE PantryItems (
+  Customer_ID  INT NOT NULL,
+  Ingredient_ID INT NOT NULL,
+  PRIMARY KEY (Customer_ID, Ingredient_ID),
+  FOREIGN KEY (Customer_ID) REFERENCES Customers(Customer_ID),
+  FOREIGN KEY (Ingredient_ID) REFERENCES Ingredient(Ingredient_ID)
+);
+
 -- Recipe Table
 CREATE TABLE Recipe (
     Recipe_ID INT PRIMARY KEY,
