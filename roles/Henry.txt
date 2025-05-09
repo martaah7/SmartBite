@@ -1,0 +1,5 @@
+Worked with group on the project schema/diagrams
+Draft the schema
+Developed Insert
+Worked on Reviews Functionality
+Created Video demo
