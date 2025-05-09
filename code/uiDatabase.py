@@ -1153,33 +1153,70 @@ class DBAppCustomer:
 
         tk.Button(new_window, text="Add", command=submit).grid(row=2, column=1, pady=10)
 
-    def display_popular_items(self, tab, item_type):
+    def display_popular_items(self, tab, item_type, search_term=""):
+        
+        for widget in tab.winfo_children():
+            widget.destroy()
+
+        search_frame = tk.Frame(tab)
+        search_frame.pack(fill="x", padx=10, pady=5)
+        tk.Label(search_frame, text="Search:", font=("Arial", 12)).pack(side="left")
+        search_entry = tk.Entry(search_frame, width=30, font=("Arial", 12))
+        search_entry.insert(0, search_term)
+        search_entry.pack(side="left", padx=(5, 0), expand=True, fill="x")
+        tk.Button(
+            search_frame,
+            text="Go",
+            command=lambda: self.display_popular_items(tab, item_type, search_entry.get())
+        ).pack(side="left", padx=5)
+        
         cursor = self.connection.cursor()
         if item_type == "Recipe":
-            query = """
+            base_query = """
                 SELECT R.Recipe_ID, R.RName, R.RDescription, R.Expected_Price,
-                       R.Cooking_Instructions, R.Nutritional_Info,
-                       AVG(Rev.Rating) AS AvgRating, COUNT(Rev.Rating) AS NumReviews
+                    R.Cooking_Instructions, R.Nutritional_Info,
+                    AVG(Rev.Rating) AS AvgRating, COUNT(Rev.Rating) AS NumReviews
                 FROM Recipe AS R
                 LEFT JOIN ReviewRating AS Rev
-                  ON Rev.Item_ID = R.Recipe_ID AND Rev.Review_Type='Recipe'
+                ON Rev.Item_ID = R.Recipe_ID AND Rev.Review_Type='Recipe'
+            """
+            params = []
+            if search_term:
+                base_query += """
+                WHERE R.RName LIKE %s OR R.RDescription LIKE %s
+                """
+                like_term = f"%{search_term}%"
+                params.extend([like_term, like_term])
+
+            base_query += """
                 GROUP BY R.Recipe_ID
                 ORDER BY NumReviews DESC, AvgRating DESC
                 LIMIT 10
             """
         else:
-            query = """
+            base_query = """
                 SELECT M.Meal_Plan_ID, M.MName, M.MDescription, M.Expected_Price,
-                       M.Duration, M.Nutritional_Info,
-                       AVG(Rev.Rating) AS AvgRating, COUNT(Rev.Rating) AS NumReviews
+                    M.Duration, M.Nutritional_Info,
+                    AVG(Rev.Rating) AS AvgRating, COUNT(Rev.Rating) AS NumReviews
                 FROM MealPlan AS M
                 LEFT JOIN ReviewRating AS Rev
-                  ON Rev.Item_ID = M.Meal_Plan_ID AND Rev.Review_Type='MealPlan'
+                ON Rev.Item_ID = M.Meal_Plan_ID AND Rev.Review_Type='MealPlan'
+            """
+            params = []
+            if search_term:
+                base_query += """
+                WHERE M.MName LIKE %s OR M.MDescription LIKE %s
+                """
+                like_term = f"%{search_term}%"
+                params.extend([like_term, like_term])
+
+            base_query += """
                 GROUP BY M.Meal_Plan_ID
                 ORDER BY NumReviews DESC, AvgRating DESC
                 LIMIT 10
             """
-        cursor.execute(query)
+
+        cursor.execute(base_query, params)
         items = cursor.fetchall()
 
         tk.Label(tab, text=f"Popular {item_type}s", font=("Arial", 24, "bold")).pack(pady=10)
@@ -1190,45 +1227,44 @@ class DBAppCustomer:
             container = tk.Frame(tab, bd=1, relief="solid", padx=10, pady=5, cursor="hand2")
             container.pack(fill="x", padx=10, pady=5)
 
-            #details frame
-            details_frame = tk.Frame(container, bg="#f0f0f0", padx=10, pady=5)
-
-            # Header with name + rating
             header = tk.Frame(container)
             header.pack(fill="x")
             tk.Label(header, text=name, font=("Arial",14,"bold")).pack(side="left")
             rating_disp = "No reviews yet." if num_reviews==0 else f"{round(avg_rating,1)}/5"
             tk.Label(header, text=f"Rating: {rating_disp}", font=("Arial",12)).pack(side="right")
 
-            # toggle on click
+            details_frame = tk.Frame(container, bg="#f0f0f0", padx=10, pady=5)
+
             def toggle(df=details_frame):
-                if df.winfo_ismapped(): df.pack_forget()
-                else: df.pack(fill="x", padx=10, pady=5)
-            # Bind both the container and header
+                if df.winfo_ismapped():
+                    df.pack_forget()
+                else:
+                    df.pack(fill="x", padx=10, pady=5)
+
             container.bind("<Button-1>", lambda e, df=details_frame: toggle(df))
             header.bind("<Button-1>",   lambda e, df=details_frame: toggle(df))
 
-            # Populate the details_frame
-            tk.Label(details_frame, text=f"Description: {desc}", anchor="w",
-                     wraplength=600, justify="left").pack(fill="x", pady=2)
+            tk.Label(details_frame, text=f"Description: {desc}",
+                    anchor="w", wraplength=600, justify="left").pack(fill="x", pady=2)
             tk.Label(details_frame, text=f"Expected Price: ${price}", anchor="w").pack(fill="x", pady=2)
-            if item_type=="Recipe":
-                tk.Label(details_frame, text=f"Cooking Instructions: {extra}", anchor="w",
-                         wraplength=600, justify="left").pack(fill="x", pady=2)
+
+            if item_type == "Recipe":
+                tk.Label(details_frame, text=f"Cooking Instructions: {extra}",
+                        anchor="w", wraplength=600, justify="left").pack(fill="x", pady=2)
             else:
                 tk.Label(details_frame, text=f"Duration: {extra} days", anchor="w").pack(fill="x", pady=2)
-            tk.Label(details_frame, text=f"Nutritional Info: {nutri}", anchor="w",
-                     wraplength=600, justify="left").pack(fill="x", pady=2)
 
-            # review and save buttons
+            tk.Label(details_frame, text=f"Nutritional Info: {nutri}",
+                    anchor="w", wraplength=600, justify="left").pack(fill="x", pady=2)
+
             tk.Button(details_frame, text="Leave a Review",
-                      command=lambda it=item_type, iid=item_id, nm=name:
-                          self.open_review_dialog_prefilled(it, iid, nm)
+                    command=lambda it=item_type, iid=item_id, nm=name:
+                        self.open_review_dialog_prefilled(it, iid, nm)
             ).pack(anchor="e", pady=5)
 
             tk.Button(details_frame, text=f"Save {item_type}",
-                      command=lambda it=item_type, iid=item_id:
-                          self.save_item(it, iid)
+                    command=lambda it=item_type, iid=item_id:
+                        self.save_item(it, iid)
             ).pack(anchor="e", pady=2)
 
     def display_my_reviews(self):
