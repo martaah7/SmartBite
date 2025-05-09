@@ -6,3 +6,4 @@ Roles:
 - Developed Popular Recipes, Popular Meal Plans, My Pantry, and My Reviews tabs
 - Added leave review buttons to all recipe/meal plan drop downs
 - Edited Saved Items tab
+- Created README.md, .gitignore, and requirements.txt
