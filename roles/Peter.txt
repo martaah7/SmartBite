@@ -5,3 +5,4 @@ Roles:
 - Developed tab layout for the final GUI
 - Developed the my items, saved items, following, and my grocery list tabs (some were edited by other groupmates to improve/fix things)
 - Developed the expandable item class and most of the functionality with it
+- Made the Meal Plan / Recipe reports tabs in the admin
