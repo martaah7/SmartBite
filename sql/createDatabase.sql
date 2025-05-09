@@ -45,11 +45,11 @@ CREATE TABLE Ingredient (
 );
 
 CREATE TABLE PantryItems (
-  Customer_ID  INT NOT NULL,
-  Ingredient_ID INT NOT NULL,
-  PRIMARY KEY (Customer_ID, Ingredient_ID),
-  FOREIGN KEY (Customer_ID) REFERENCES Customers(Customer_ID),
-  FOREIGN KEY (Ingredient_ID) REFERENCES Ingredient(Ingredient_ID)
+    Customer_ID  INT NOT NULL,
+    Ingredient_ID INT NOT NULL,
+    PRIMARY KEY (Customer_ID, Ingredient_ID),
+    FOREIGN KEY (Customer_ID) REFERENCES Customers(Customer_ID),
+    FOREIGN KEY (Ingredient_ID) REFERENCES Ingredient(Ingredient_ID)
 );
 
 -- Recipe Table

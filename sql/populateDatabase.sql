@@ -289,3 +289,21 @@ VALUES (1, 10), (1, 11), (2, 10), (3, 14);
 
 INSERT INTO MSavedBy (Customer_ID, ID) 
 VALUES (1, 10), (1, 11), (2, 10), (3, 14);
+
+ALTER TABLE Customers ADD User_ID INT, 
+  ADD FOREIGN KEY (User_ID) REFERENCES Users(User_ID);
+
+
+-- Insert demo employees
+INSERT INTO Employee (Employee_ID, EName)
+VALUES 
+(1, 'Alice Johnson'),
+(2, 'Bob Smith'),
+(3, 'Charlie Brown');
+
+-- Insert demo customers
+INSERT INTO Customers (Customer_ID, CName, Dietary_Preference, Contact_Info, Payment_Info, Expenses, Nutritional_Info)
+VALUES 
+(1, 'Emily Carter', 'Vegetarian', 'emily@example.com', '4111111111111111', 120.50, 'Low sodium diet'),
+(2, 'David Lee', 'Vegan', 'david@example.com', '4222222222222222', 85.00, 'High protein'),
+(3, 'Sarah Miller', 'Keto', 'sarah@example.com', '4333333333333333', 150.75, 'Low carb');
