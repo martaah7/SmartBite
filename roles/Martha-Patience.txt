@@ -3,6 +3,6 @@ Roles:
 - Worked with group on the project schema/diagrams
 - Created communication line and git repo
 - Made the populateDatabase.sql file (edited by other group mates)
-- Developed Popular Recipes, Popular Meal Plans, and My Reviews tabs
+- Developed Popular Recipes, Popular Meal Plans, My Pantry, and My Reviews tabs
 - Added leave review buttons to all recipe/meal plan drop downs
 - Edited Saved Items tab
