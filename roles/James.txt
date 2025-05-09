@@ -1,0 +1,3 @@
+Worked on authentication and logging out and password change. 
+Helped on adding users to tables and ui changes.
+Worked on database and backend.
